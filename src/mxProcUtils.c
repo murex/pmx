@@ -22,7 +22,7 @@
 #include "pmx.h"
 #include "pmxsupport.h"
 
-#include "lib/common/mxconst/h/mx_version.h"
+//#include "lib/common/mxconst/h/mx_version.h"
 
 static const char *unknownSymbol = "??????";
 
@@ -1616,112 +1616,5 @@ void read_string_from_file(const mxProc * p, Elf_Addr vmAddr, char *buf, size_t 
 
 void checkConsistency(mxProc * p, int force)
 {
-   /***************** Read build/version from binary *******************/
-   // We don't use the standard readMxProcVM or read_string as we _only_ want to look at the main binary
-   int elfID=0;
-   if (p->type == mxProcTypeCore)
-      elfID=1;
-
-   char vmStaticBuildID[100] = "";
-   Elf_Addr pvmStaticBuildID = getSymbolAddress(p,"szStaticMxBuildID");
-   if (pvmStaticBuildID)
-   {
-      Elf_Addr pTmp;
-      readFileByVMAddress(p, pvmStaticBuildID, &pTmp, sizeof(pTmp), elfID);
-      read_string_from_file(p,pTmp,vmStaticBuildID,sizeof(vmStaticBuildID), elfID);
-      debug("szStaticMxBuildID symbol at " FMT_ADR ", array at " FMT_ADR ", contains [%s]",pvmStaticBuildID, pTmp, vmStaticBuildID);
-   }
-   else
-      debug("szStaticMxBuildID symbol not found");
-
-   char vmStaticVersionMajor[100] = "";
-   Elf_Addr pvmStaticVersionMajor = getSymbolAddress(p,"szStaticMxVersionMajor");
-   if (pvmStaticVersionMajor)
-   {
-      Elf_Addr pTmp = read_addr(p,pvmStaticVersionMajor);
-      readFileByVMAddress(p, pvmStaticVersionMajor, &pTmp, sizeof(pTmp), elfID);
-      read_string_from_file(p,pTmp,vmStaticVersionMajor,sizeof(vmStaticVersionMajor), elfID);
-      debug("szStaticVersionMajor symbol at " FMT_ADR ", array at " FMT_ADR ", contains [%s]",vmStaticVersionMajor, pTmp, vmStaticVersionMajor);
-   }
-   else
-      debug("szStaticVersionMajor symbol not found");
-
-   // If we can't read this, no point continuing checks
-   if (!vmStaticBuildID[0] || !vmStaticVersionMajor[0])
-   {
-      warning("Unable to detect mx version/build from binary. Unable to check consistency. Output may be unreliable.");
-      return;
-   }
-
-   /***************** Read build/version from core/pid *******************/
-   char vmBuildID[100] = "";
-   Elf_Addr pvmBuildID = getSymbolAddress(p,"szMxBuildID");
-   if (pvmBuildID)
-   {
-      Elf_Addr pTmp = read_addr(p,pvmBuildID);
-      read_string(p,pTmp,vmBuildID,sizeof(vmBuildID));
-      debug("szMxBuildID symbol at " FMT_ADR ", array at " FMT_ADR ", contains [%s]",pvmBuildID, pTmp, vmBuildID);
-   }
-   else
-      debug("szMxBuildID symbol not found");
-
-   // Read version from the core/process
-   char vmVersionMajor[100] = "";
-   Elf_Addr pvmVersionMajor = getSymbolAddress(p,"szMxVersionMajor");
-   if (pvmVersionMajor)
-   {
-      Elf_Addr pTmp = read_addr(p,pvmVersionMajor);
-      read_string(p,pTmp,vmVersionMajor,sizeof(vmVersionMajor));
-      debug("szVersionMajor symbol at " FMT_ADR ", array at " FMT_ADR ", contains [%s]",vmVersionMajor, pTmp, vmVersionMajor);
-   }
-   else
-      debug("szVersionMajor symbol not found");
-
-
-   /***************** Check Binary exactly matches core ********************/
-   if (vmBuildID[0] < '0' || vmBuildID[0] > '9' || vmVersionMajor[0] != 'v') // Sanity check as it could be rubbish
-   {
-      // Fail, as this is almost certainly a mx/core mismatch
-      if (force)
-         warning("binary build [%s / %s] doesn't match core/pid!  Results will most likely be wrong!", vmStaticVersionMajor,  vmStaticBuildID);
-      else
-         fatal_error("binary build [%s / %s] doesn't match core/pid!  Use --force to ignore.", vmStaticVersionMajor,  vmStaticBuildID);
-   }
-   else if (strcmp(vmVersionMajor,vmStaticVersionMajor) || strcmp(vmBuildID,vmStaticBuildID))
-   {
-      if (force)
-         warning("binary build [%s / %s] doesn't match core/pid [%s / %s]! Results will most likely be wrong!", vmStaticVersionMajor,  vmStaticBuildID, vmVersionMajor, vmBuildID);
-      else
-         fatal_error("binary build [%s / %s] doesn't match core/pid [%s / %s]! Use --force to ignore", vmStaticVersionMajor,  vmStaticBuildID, vmVersionMajor, vmBuildID);
-   }
-
-   /***************** Check pmx is close enough to core/pid ********************/
-
-   // Within a major version we assume the structures are stable, so no need to warn if the buildID doesn't match
-   // This is not the case for v3.1.build, where structures change regularly, so we should match exactly
-
-   // Find the offset of the 3rd . as we should only compare up to that point
-   int i=0;
-   int dotCount=0;
-   for (i=0; vmVersionMajor[i] && dotCount < 3 ; i++)
-   {
-      if (vmVersionMajor[i]=='.')
-         dotCount++;
-   }
-
-   if (dotCount==3) // Don't include the dot in the comparison
-      i--;
-
-   if (strncmp(vmVersionMajor,mxVERSION_INTERNAL_MAJOR, i))
-   {
-      warning("pmx version [%s] can't reliably work with core/pid version [%s]!", mxVERSION_INTERNAL_MAJOR, vmVersionMajor);
-      warning("Extracted data structures may be inaccurate, but other information (pstack, pargs, etc) should be correct");
-   }
-   else if (!strncmp(vmVersionMajor,"v3.1.build",i) && strcmp(vmBuildID,mxBUILD_ID))
-   {
-      warning("pmx build [%s] can't reliably work with core/pid build [%s]!", mxBUILD_ID, vmBuildID);
-      warning("Extracted data structures may be inaccurate, but other information (pstack, pargs, etc) should be correct");
-   }
-
 }
 
