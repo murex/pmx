@@ -1,10 +1,8 @@
-bin_PROGRAMS = pmx
+bin_PROGRAMS = $(top_builddir)/bin/pmx
 
-#AM_CFLAGS = -x c++ -I$(srcdir)/../include
-AM_CXXFLAGS = -I$(srcdir)/../include
-#AM_CXXFLAGS = $(INTI_CFLAGS)
+AM_CXXFLAGS = -I$(top_builddir)/include
 
-pmx_SOURCES = main.c \
+__top_builddir__bin_pmx_SOURCES = main.c \
 pmx.c \
 mxProcUtils.c \
 mxProcUtils_linux.c \
@@ -13,5 +11,5 @@ mxProcUtils_x86.c  \
 ../include/pmxsupport.h \
 ../include/mxProcUtils.h
 
-pmx_CFLAGS = -I$(top_srcdir)/include 
-#-lstdc++
+__top_builddir__bin_pmx_CFLAGS = -I$(top_builddir)/include 
+__top_builddir__bin_pmx_CXXFLAGS = -I$(top_builddir)/include 
