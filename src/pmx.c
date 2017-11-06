@@ -64,8 +64,8 @@ int print_strcmp(const mxProc * proc, const char *name, const char *comment, mxA
 
 // Note that almost all structures are passed as pointes.  Make sure you include * in the definition below.
 static TypePrinterEntry type_printer_for_type[] = {
-   {"MD_UTF8", print_utf8, NULL, 1, 1},
    /*
+   {"MD_UTF8", print_utf8, NULL, 1, 1},
    {"mxStaticsStream_templatesTEMPLATE", murex::pmx::mx_extractor::extract_mxStaticsStream_templatesTEMPLATE, "RT_INSTRUMENT_GENERATOR", 1, 1},
    {"murex::rates::instrument::Instrument", murex::pmx::mx_extractor::extract_murex_rates_instrument_Instrument, "RT_INSTRUMENT", 1, 1},
    {"SPB_HDR_DESC", print_trn_hdr_desc, NULL, 1, 1},
