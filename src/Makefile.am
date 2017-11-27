@@ -11,5 +11,5 @@ mxProcUtils_x86.c  \
 ../include/pmxsupport.h \
 ../include/mxProcUtils.h
 
-__top_builddir__bin_pmx_CFLAGS = -I$(top_builddir)/include 
-__top_builddir__bin_pmx_CXXFLAGS = -I$(top_builddir)/include 
+__top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include 
+__top_builddir__bin_pmx_CXXFLAGS = -I$(srcdir)/../include 
