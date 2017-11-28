@@ -163,7 +163,6 @@ mxProc;
 mxProc *openCoreFile(const char *binFileName, const char *coreFileName, const char *libraryRoot, int plddMode);
 mxProc *openPID(const char *binFileName, const char *PID, int plddMode);
 void closeMxProc(mxProc *p);
-void checkConsistency(mxProc * p, int force);
 
 void printCallStack(const mxProc *p, mxLWP_t t, int fullStack, int stackArguments, int corruptStackSearch);
 void dumpStack(const mxProc *p, mxLWP_t t, int words);

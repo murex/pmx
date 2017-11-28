@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <getopt.h>
+#include <dlfcn.h>
 
 //#include "lib/common/mxconst/h/mx_version.h"
 
@@ -36,6 +37,8 @@ int main(int argc, char *argv[])
    int lwp = 1;
    long stackArguments = 8;
    char libraryRoot[1024] = "/";
+   char libraryExtension[1024] = "./libpmxext.so";
+   void *libextHandle = NULL;
    char filePrefix[1024] = "";
    char *command;
    int corruptStack=200;
@@ -73,6 +76,7 @@ int main(int argc, char *argv[])
    char sz_inline[]="inline";
    char sz_corrupt[]="corrupt-stack";
    char sz_sysroot[]="sysroot";
+   char sz_libext[]="libext";
    char sz_pargs[]="pargs";
    char sz_output_prefix[]="output-prefix";
    char sz_raw_stack[]="raw-stack";
@@ -95,6 +99,7 @@ int main(int argc, char *argv[])
       {sz_corrupt,      required_argument, 0, 'j' },
       {sz_force,        no_argument,       0, 'k' },
       {sz_sysroot,      required_argument, 0, 'l' },
+      {sz_libext,       required_argument, 0, 'L' },
       {sz_pargs,        no_argument,       0, 'm' },
       {sz_output_prefix,required_argument, 0, 'p' },
       {sz_raw_stack,    required_argument, 0, 'r' },
@@ -107,7 +112,7 @@ int main(int argc, char *argv[])
 
    /* options */
    int opt_index=0;
-   while ((opt = getopt_long(argc, argv, "a:bcd:efhij:l:mp:r:stvx:", long_options, &opt_index)) != -1)
+   while ((opt = getopt_long(argc, argv, "a:bcd:efhij:l:L:mp:r:stvx:", long_options, &opt_index)) != -1)
    {
       switch (opt)
       {
@@ -148,6 +153,9 @@ int main(int argc, char *argv[])
             strncpy(libraryRoot,optarg,sizeof(libraryRoot));
             if (libraryRoot[strlen(libraryRoot)-1] != '/')
                strcat(libraryRoot,"/");
+            break;
+         case 'L':
+            strncpy(libraryExtension,optarg,sizeof(libraryExtension));
             break;
          case 'm':
             pargs = 1;
@@ -218,6 +226,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "                           Use -t to list supported types.  Default is RAW1K.\n");
       fprintf(stderr, "  --all-threads, -f        Process all threads, rather than just the first.\n");
       fprintf(stderr, "  --sysroot=path, -l path  Use path as system root for loading libraries with\n");
+      fprintf(stderr, "  --libext=path, -L path   Path to customized type checker, default is libpmxext.so.\n");
       fprintf(stderr, "                           absolute references. Like 'set sysroot' in gdb.\n");
       fprintf(stderr, "  --output-prefix=path, -p path\n");
       fprintf(stderr, "                           Use path as the prefix for output files.\n");
@@ -311,8 +320,34 @@ int main(int argc, char *argv[])
       p = openPID(mx, processBase, pldd);
    }
 
+   int statResult = 0;
+   struct stat sb;
+   if(stat(libraryExtension, &sb) != -1)
+   {
+      fprintf(stderr, "Found type extension library %s, loading ... \n", libraryExtension);
+      libextHandle = dlopen(libraryExtension, RTLD_LAZY);
+      if(!libextHandle)
+         warning("Unable to open the extension library!\n");
+   }
+
+   typedef void (*func_t)(mxProc *, int);
+
    // Check that pmx, binary and core/PID are consistent as it may lead to bad structures / symbols
-   checkConsistency(p, force);
+   if(libextHandle)
+   {
+      func_t checkFunc = (func_t) dlsym(libextHandle, "checkConsistency");
+      const char* dlsym_err = dlerror();
+      if(dlsym_err)
+      {
+         warning("Cannot load symbol checkConsistency: %s", dlsym_err);
+      }
+      else
+      {
+         fprintf(stderr, "Calling checkConsistency\n");
+         checkFunc(p, force);
+      }
+   }
+
 
    // Override file prefix if specified
    if (filePrefix[0])
@@ -379,6 +414,10 @@ int main(int argc, char *argv[])
 
    // Close proc to free memory, file descriptors, etc
    closeMxProc(p);
+
+   // close the extension library
+   if(libextHandle)
+      dlclose(libextHandle);
 
    return (EXIT_SUCCESS);
 }

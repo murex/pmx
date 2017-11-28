@@ -12,4 +12,5 @@ mxProcUtils_x86.c  \
 ../include/mxProcUtils.h
 
 __top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include 
-__top_builddir__bin_pmx_CXXFLAGS = -I$(srcdir)/../include 
+__top_builddir__bin_pmx_CXXFLAGS = -I$(srcdir)/../include  
+__top_builddir__bin_pmx_LDADD = -ldl

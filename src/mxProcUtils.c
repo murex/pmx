@@ -1614,7 +1614,3 @@ void read_string_from_file(const mxProc * p, Elf_Addr vmAddr, char *buf, size_t 
    return;
 }
 
-void checkConsistency(mxProc * p, int force)
-{
-}
-
