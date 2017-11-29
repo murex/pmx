@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
    char *command;
    int corruptStack=200;
    int force=0;
+   int print_types = 0;
 
    if ((command = strrchr(argv[0], '/')) != NULL)
    {
@@ -172,9 +173,8 @@ int main(int argc, char *argv[])
             pstack = 1; extract=1;
             break;
          case 't':
-            printf("This pmx binary can print the following types:\n");
-            display_type_printers();
-            exit(0);
+            print_types = 1;
+            break;
          case 'v':
             setVerbose(1);
             break;
@@ -193,8 +193,7 @@ int main(int argc, char *argv[])
    argc -= optind;
    argv += optind;
 
-
-   if (errflg || argc < 1 || argc > 2)
+   if (errflg || (argc < 1 && print_types == 0) || argc > 2)
    {
       //              "01234567890123456789012345678901234567890123456789012345678901234567890123456789\n");
       //fprintf(stderr, "pmx " mxVERSION_EXTERNAL_MAJOR " " mxBUILD_ID "\n");
@@ -243,6 +242,37 @@ int main(int argc, char *argv[])
    if (!pldd && !pmap && !pargs && !address && !dumpRawStack )
       extract=1;
 
+   int statResult = 0;
+   struct stat sb;
+   if(stat(libraryExtension, &sb) != -1)
+   {
+      fprintf(stderr, "Found type extension library %s, loading ... \n", libraryExtension);
+      libextHandle = dlopen(libraryExtension, RTLD_LAZY);
+      if(!libextHandle)
+         warning("Unable to open the extension library!\n");
+   }
+
+   TypePrinterEntry *ext = NULL;
+   // Check that pmx, binary and core/PID are consistent as it may lead to bad structures / symbols
+   if(libextHandle)
+   {
+      // lookup for customized type printer definitions
+      ext = (TypePrinterEntry *)dlsym(libextHandle, "type_printer_extension");
+      const char *dlsym_err = dlerror();
+      if(dlsym_err)
+         warning("Cannot load variable type_printer_extension: %s", dlsym_err);
+      else
+         fprintf(stderr, "extension type printer loaded\n");
+   }
+
+   append_type_printers(ext);
+
+   if(print_types)
+   {
+      printf("This pmx binary can print the following types:\n");
+      display_type_printers();
+      exit(0);
+   }
    const char *mx = NULL;
    if (argc==2)
    {
@@ -322,21 +352,10 @@ int main(int argc, char *argv[])
       p = openPID(mx, processBase, pldd);
    }
 
-   int statResult = 0;
-   struct stat sb;
-   if(stat(libraryExtension, &sb) != -1)
-   {
-      fprintf(stderr, "Found type extension library %s, loading ... \n", libraryExtension);
-      libextHandle = dlopen(libraryExtension, RTLD_LAZY);
-      if(!libextHandle)
-         warning("Unable to open the extension library!\n");
-   }
-
-   typedef int (*func_t)(mxProc *, int);
-
    // Check that pmx, binary and core/PID are consistent as it may lead to bad structures / symbols
    if(libextHandle)
    {
+      typedef int (*func_t)(mxProc *, int);
       func_t checkFunc = (func_t) dlsym(libextHandle, "checkConsistency");
       const char* dlsym_err = dlerror();
       if(dlsym_err)
@@ -348,34 +367,7 @@ int main(int argc, char *argv[])
          fprintf(stderr, "Calling checkConsistency\n");
          int ret = checkFunc(p, force);
       }
-
-      TypePrinterEntry *ext = (TypePrinterEntry *)dlsym(libextHandle, "type_printer_extension");
-      dlsym_err = dlerror();
-      if(dlsym_err)
-      {
-         warning("Cannot load variable type_printer_extension: %s", dlsym_err);
-      }
-      else
-      {
-         fprintf(stderr, "extension type printer loaded: size = %d\n", sizeof(ext));
-         TypePrinterEntry *p = ext;
-         while( p && p->type_name) 
-         {
-            printf("entry: %s, %s\n", p->type_name, p->comment);
-            p++;
-         }
-        /* 
-         fprintf(stderr, "default type_printer_for_type: size = %d\n", sizeof(type_printer_for_type));
-         p = type_printer_for_type;
-         while( p && p->type_name) 
-         {
-            printf("entry: %s \n", p->type_name);
-            p++;
-         }*/
-      }
-
    }
-
 
    // Override file prefix if specified
    if (filePrefix[0])

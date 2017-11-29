@@ -43,7 +43,8 @@ int print_snprintf(const mxProc * proc, const char *name, const char *comment, m
 int print_strcmp(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
 
 // Note that almost all structures are passed as pointes.  Make sure you include * in the definition below.
-static TypePrinterEntry type_printer_for_type[] = {
+static TypePrinterEntry *type_printer_for_type = NULL;
+static TypePrinterEntry type_printer_default[] = {
    /*
    {"MD_UTF8", print_utf8, NULL, 1, 1},
    {"mxStaticsStream_templatesTEMPLATE", murex::pmx::mx_extractor::extract_mxStaticsStream_templatesTEMPLATE, "RT_INSTRUMENT_GENERATOR", 1, 1},
@@ -141,6 +142,34 @@ static FunctionPrinterEntry function_printers[] = {
    { NULL, NULL}
 };
 
+int append_type_printers(TypePrinterEntry *ext)
+{
+   debug("Appending type printers");
+   
+   int size_orig = 0;
+   int size_ext = 0;
+   TypePrinterEntry *p = ext;
+   while( p && p->type_name )
+   {
+      size_ext++;
+      p++;
+   }
+
+   p = type_printer_default;
+   while( p && p->type_name )
+   {
+      size_orig++;
+      p++;
+   }
+
+   debug("type_printer_default size = %d, ext size = %d", size_orig, size_ext);
+   type_printer_for_type = (TypePrinterEntry *)calloc(sizeof(TypePrinterEntry), size_orig + size_ext + 1);   
+
+   memcpy(type_printer_for_type, type_printer_default, sizeof(TypePrinterEntry) * size_orig);
+   memcpy(type_printer_for_type + size_orig, ext, sizeof(TypePrinterEntry) * size_ext);
+
+   return size_orig + size_ext;
+}
 
 static StackHandler *lookup_print_function(const char *type_name, bool auto_detect)
 {

@@ -34,6 +34,7 @@ int print_mxargv(const mxProc *proc, Elf_Addr argc_addr, Elf_Addr argv, Elf_Addr
 void setInlineMode(int mode);
 int getInlineMode();
 
+int append_type_printers(TypePrinterEntry *ext);
 void display_type_printers();
 
 void print_arbitrary_type(const mxProc *proc, Elf_Addr addr, const char *dataType);
