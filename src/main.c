@@ -19,6 +19,8 @@
 #include "mxProcUtils.h"
 #include "pmx.h"
 
+extern TypePrinterEntry *type_printer_for_type;
+
 int main(int argc, char *argv[])
 {
    //These are the different modes we can run in
@@ -330,7 +332,7 @@ int main(int argc, char *argv[])
          warning("Unable to open the extension library!\n");
    }
 
-   typedef void (*func_t)(mxProc *, int);
+   typedef int (*func_t)(mxProc *, int);
 
    // Check that pmx, binary and core/PID are consistent as it may lead to bad structures / symbols
    if(libextHandle)
@@ -344,8 +346,34 @@ int main(int argc, char *argv[])
       else
       {
          fprintf(stderr, "Calling checkConsistency\n");
-         checkFunc(p, force);
+         int ret = checkFunc(p, force);
       }
+
+      TypePrinterEntry *ext = (TypePrinterEntry *)dlsym(libextHandle, "type_printer_extension");
+      dlsym_err = dlerror();
+      if(dlsym_err)
+      {
+         warning("Cannot load variable type_printer_extension: %s", dlsym_err);
+      }
+      else
+      {
+         fprintf(stderr, "extension type printer loaded: size = %d\n", sizeof(ext));
+         TypePrinterEntry *p = ext;
+         while( p && p->type_name) 
+         {
+            printf("entry: %s, %s\n", p->type_name, p->comment);
+            p++;
+         }
+        /* 
+         fprintf(stderr, "default type_printer_for_type: size = %d\n", sizeof(type_printer_for_type));
+         p = type_printer_for_type;
+         while( p && p->type_name) 
+         {
+            printf("entry: %s \n", p->type_name);
+            p++;
+         }*/
+      }
+
    }
 
 

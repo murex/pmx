@@ -18,26 +18,6 @@
 
 void debug(const char *format, ...);
 
-typedef void StackHandler(const mxProc * proc, const char *name, const char *comment, Elf_Addr value);
-
-typedef struct
-{
-   const char *type_name;
-   StackHandler *stack_handler;
-   const char *comment;
-   bool pointer;
-   bool auto_detect;
-} TypePrinterEntry;
-
-// Return 0 to continue processing function arguments by type, non-zero to not automatically process arguments
-typedef int FunctionHandler(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-
-typedef struct
-{
-   const char *function_name;
-   FunctionHandler *function_handler;
-} FunctionPrinterEntry;
-
 void print_null(const mxProc *, const char *, const char *);
 void print_double_pointer(const mxProc *, const char *, const char *, Elf_Addr);
 void print_int_argument(const mxProc *, const char *, const char *, Elf_Addr);
