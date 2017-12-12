@@ -1,5 +1,8 @@
 AC_INIT(pmx, 1.0, pmx-support@murex.com)
 
+: ${CFLAGS=""}
+: ${CXXFLAGS=""}
+
 LT_INIT
 
 AC_CONFIG_MACRO_DIR([m4])
