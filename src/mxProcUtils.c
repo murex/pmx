@@ -907,7 +907,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
    unsigned long l;
 
    Elf_Addr addrStartTag, addrEndTag;
-   for (addrEndTag = frameAddr; addrEndTag>lastFoundTag && addrEndTag > frameAddr-20*sizeof(Elf_Addr) ; addrEndTag-=sizeof(Elf_Addr))
+   for (addrEndTag = frameAddr; addrEndTag>lastFoundTag && addrEndTag > frameAddr-100*sizeof(Elf_Addr) ; addrEndTag-=sizeof(Elf_Addr))
    {
       readMxProcVM(proc,addrEndTag,&l,sizeof(l));
       if (l ==  PMX_INSTRUMENT_END_TAG)
@@ -925,6 +925,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
          if (l ==  PMX_INSTRUMENT_START_TAG)
          {
             debug("PMX Instrumentation: Start tag at " FMT_ADR, addrStartTag);
+      		lastFoundTag = addrEndTag;
             break;
          }
       }
@@ -934,7 +935,6 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
          addrEndTag = addrStartTag = 0;
       }
 
-      lastFoundTag = addrEndTag;
    }
    else
    {

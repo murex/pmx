@@ -10,16 +10,27 @@
 #define PMX_INSTRUMENT_START_TAG 0xCAFEF00D
 #define PMX_INSTRUMENT_END_TAG   0xFABABBA0
 
+// We add the magic tags at the end, as gcc 4.9 creates a duplicate structure in memory if we initialise with them in place
 #define PMX_INSTRUMENT_START                    \
     volatile struct {                           \
         unsigned int start_tag;
+
+#ifdef __GNUC__
+#define PMX_INSTRUMENT_HEAD_END                 \
+    unsigned int end_tag;                       \
+    } __attribute__((unused)) mx_instrumentation = { \
+          0x0,
+#else
 #define PMX_INSTRUMENT_HEAD_END                 \
     unsigned int end_tag;                       \
     } mx_instrumentation = {                    \
-          PMX_INSTRUMENT_START_TAG,
+          0x0,
+#endif
+
 #define PMX_INSTRUMENT_END                      \
-    PMX_INSTRUMENT_END_TAG } ; \
-mx_instrumentation.start_tag=PMX_INSTRUMENT_START_TAG; // arbitrary use to avoid unused variable warnings
+         0x0 } ; \
+mx_instrumentation.start_tag=PMX_INSTRUMENT_START_TAG; \
+mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
 
 #define PMX_INSTRUMENT_HEAD_ROW(A)          unsigned long pmx_ ## A;
 
