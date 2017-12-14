@@ -13,8 +13,6 @@ int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const 
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 {
-	PMX_INSTRUMENT(t, p, s, a, b, c);
-
 	printf("t='%s', s='%s'\n", t.c_str(), s);
 	printf( "src='%s', contains 'hello' ? %s\n", p->str, strncmp( p->str, "hello", 5 ) ? "No" : "Yes" );
 
@@ -25,8 +23,36 @@ int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 
 int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule)
 {
+#if 1
 	PMX_INSTRUMENT(f, cmd, flag, tabname, filterType, condition, fWithCond, exceptionRule);
-	
+#else // debug -- expand the PMX_INSTRUMENT macro
+   volatile struct {
+      unsigned int start_tag;
+      unsigned long pmx_f;
+      unsigned long pmx_cmd;
+      unsigned long pmx_flag;
+      unsigned long pmx_tabname;
+      unsigned long pmx_filterType;
+      unsigned long pmx_condition;
+      unsigned long pmx_fWithCond;
+      unsigned long pmx_exRule;
+      unsigned int end_tag;
+   } __attribute__((unused))
+   mx_instrumentation = {0x0,
+      *(unsigned long *)&f,
+      *(unsigned long *)&cmd,
+      *(unsigned long *)&flag,
+      *(unsigned long *)&tabname,
+      *(unsigned long *)&filterType,
+      *(unsigned long *)&condition,
+      *(unsigned long *)&fWithCond,
+      *(unsigned long *)&exceptionRule,
+      0x0};
+
+   mx_instrumentation.start_tag = 0xCAFEF00D;
+   mx_instrumentation.end_tag = 0xFABABBA0;
+#endif
+
 	int *x = NULL; 	
 	printf("p(NULL) = %d\n", *x );	
 
