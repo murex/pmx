@@ -4,15 +4,32 @@
 #include <signal.h>
 
 #include "structFOO.h"
+#include "pmxsupport.h"
 
 using namespace std;
 
+int foo( std::string t, FOO *p, char *s, int a, int *b, int c );
+int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule);
+
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 {
+	PMX_INSTRUMENT(t, p, s, a, b, c);
+
 	printf("t='%s', s='%s'\n", t.c_str(), s);
 	printf( "src='%s', contains 'hello' ? %s\n", p->str, strncmp( p->str, "hello", 5 ) ? "No" : "Yes" );
+
+	int ret = bar(p, (const char *)"hello", 0x0a0b0c0d, (char *)"murex", 128, NULL, true, -1);
+	printf("ret = %d\n", ret);
+	return 0;
+}
+
+int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule)
+{
+	PMX_INSTRUMENT(f, cmd, flag, tabname, filterType, condition, fWithCond, exceptionRule);
+	
 	int *x = NULL; 	
 	printf("p(NULL) = %d\n", *x );	
+
 	return 0;
 }
 
