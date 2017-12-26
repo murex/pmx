@@ -89,16 +89,25 @@ union mxArgValue
 typedef struct
 {
    union mxArgValue val;
+   Elf_Addr addr;
    int size; // 1,4 or 8 bytes are supported
    char *type;
 }
 mxArgument;
+
+typedef struct 
+{
+   Elf_Addr startTagAddr;
+   Elf_Addr endTagAddr;
+}
+mxInstTagAddr;
 
 #define MAX_ARGS 100
 typedef struct
 {
    // Arguments from instrumentation
    mxArgument instArg[MAX_ARGS];
+   mxInstTagAddr instAddr;
    int instCount;
    // Arguments passed on the stack
    mxArgument stackArg[MAX_ARGS];

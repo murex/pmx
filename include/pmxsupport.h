@@ -32,7 +32,7 @@
 mx_instrumentation.start_tag=PMX_INSTRUMENT_START_TAG; \
 mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
 
-#define PMX_INSTRUMENT_HEAD_ROW(A)          unsigned long pmx_ ## A;
+#define PMX_INSTRUMENT_HEAD_ROW(A)          __typeof__(A) pmx_ ## A;
 
 #define PMX_INSTRUMENT_HEAD1(A)                 PMX_INSTRUMENT_START                  PMX_INSTRUMENT_HEAD_ROW(A)
 #define PMX_INSTRUMENT_HEAD2(A,B)               PMX_INSTRUMENT_HEAD1(A)               PMX_INSTRUMENT_HEAD_ROW(B)
@@ -44,7 +44,7 @@ mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
 #define PMX_INSTRUMENT_HEAD8(A,B,C,D,E,F,G,H)   PMX_INSTRUMENT_HEAD7(A,B,C,D,E,F,G)   PMX_INSTRUMENT_HEAD_ROW(H)
 #define PMX_INSTRUMENT_HEAD9(A,B,C,D,E,F,G,H,I) PMX_INSTRUMENT_HEAD8(A,B,C,D,E,F,G,H) PMX_INSTRUMENT_HEAD_ROW(I)
 
-#define PMX_INSTRUMENT_VALUES_ROW(A)        *(unsigned long *)&A,
+#define PMX_INSTRUMENT_VALUES_ROW(A)        *(__typeof(A)*)&A,
 
 #define PMX_INSTRUMENT_VALUES1(A)                 PMX_INSTRUMENT_HEAD_END                 PMX_INSTRUMENT_VALUES_ROW(A)
 #define PMX_INSTRUMENT_VALUES2(A,B)               PMX_INSTRUMENT_VALUES1(A)               PMX_INSTRUMENT_VALUES_ROW(B)

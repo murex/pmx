@@ -5,11 +5,13 @@
 
 #include "structFOO.h"
 #include "pmxsupport.h"
+//#include "pmx_stackcontext.hpp"
 
 using namespace std;
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c );
 int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule);
+void dummyFunc(int a, int b, long c, long d, int e, int f, int g, int h);
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 {
@@ -53,10 +55,21 @@ int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const 
    mx_instrumentation.end_tag = 0xFABABBA0;
 #endif
 
-	int *x = NULL; 	
-	printf("p(NULL) = %d\n", *x );	
+   dummyFunc( 1, 2, 3, 4, 5, 6, 7, 8);
 
 	return 0;
+}
+
+void dummyFunc(int a, int b, long c, long d, int e, int f, int g, int h)
+{
+   PMX_INSTRUMENT(a, b, c, d, e, f, g, h);
+
+   int xx = a * a + b * b + c + d + e + f + g + h;
+   int yy = a * b + a / b;
+
+   printf("xx = %d, yy = %d\n", xx, yy);
+   int *x = NULL;
+	printf("p(NULL) = %d\n", *x );	
 }
 
 int main( int argc, char **argv )

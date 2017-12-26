@@ -39,6 +39,33 @@ void setVerbose(int v)
    verbose=1;
 }
 
+int getSizeByType(const char *type)
+{
+   if(0 == strlen(type))
+   {
+      warning("intput type length is zero.");
+      return 0;
+   }
+
+   if('*' == type[strlen(type) -1])
+   {
+      return sizeof(int *);
+   }
+
+   if(0 == strcmp(type, "int") || 0 == strcmp(type, "signed int") || 0 == strcmp(type, "unsigned int") || 0 == strcmp(type, "bool"))
+      return sizeof(int);
+   if(0 == strcmp(type, "long") || 0 == strcmp(type, "signed long") || 0 == strcmp(type, "unsigned long"))
+      return sizeof(long);
+   if(0 == strcmp(type, "float"))
+      return sizeof(double);
+   if(0 == strcmp(type, "double"))
+      return sizeof(double);
+
+   warning("unknown type: %s", type);
+
+   return 0;
+}
+
 void debug(const char *format, ...)
 {
    va_list ap;
@@ -904,7 +931,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 {
 #if !defined(__sparc)
    static Elf_Addr lastFoundTag = 0; // To make sure we don't find the tag from the last frame
-   unsigned long l;
+   unsigned int l; // gcc copies the instrument tags in 4-byte even in 64-bit build
 
    Elf_Addr addrStartTag, addrEndTag;
    for (addrEndTag = frameAddr; addrEndTag>lastFoundTag && addrEndTag > frameAddr-100*sizeof(Elf_Addr) ; addrEndTag-=sizeof(Elf_Addr))
@@ -912,14 +939,14 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
       readMxProcVM(proc,addrEndTag,&l,sizeof(l));
       if (l ==  PMX_INSTRUMENT_END_TAG)
       {
-         debug("PMX Instrumentation: End tag at " FMT_ADR "", addrEndTag);
+         debug("PMX Instrumentation: End tag at " FMT_ADR " value: " FMT_ADR, addrEndTag, l);
          break;
       }
    }
 
    if (l ==  PMX_INSTRUMENT_END_TAG && addrEndTag != lastFoundTag)
    {
-      for (addrStartTag = addrEndTag; addrStartTag>lastFoundTag && addrStartTag > addrEndTag-20*sizeof(Elf_Addr) ; addrStartTag-=sizeof(Elf_Addr))
+      for (addrStartTag = addrEndTag; addrStartTag>lastFoundTag && addrStartTag > addrEndTag-20*sizeof(Elf_Addr) ; addrStartTag-=sizeof(l))
       {
          readMxProcVM(proc,addrStartTag,&l,sizeof(l));
          if (l ==  PMX_INSTRUMENT_START_TAG)
@@ -934,7 +961,6 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
          debug("PMX Instrumentation: Failed to find start tag");
          addrEndTag = addrStartTag = 0;
       }
-
    }
    else
    {
@@ -942,12 +968,8 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
       addrEndTag = addrStartTag = 0;
    }
 
-   if (addrStartTag)
-   {
-      int i=0;
-      for (Elf_Addr addrArg = addrStartTag + sizeof(Elf_Addr); addrArg < addrEndTag ; addrArg +=sizeof(Elf_Addr))
-         addInstrumentedArgument(proc, args, i++, addrArg, sizeof(Elf_Addr));
-   }
+   args->instAddr.startTagAddr = addrStartTag;
+   args->instAddr.endTagAddr = addrEndTag;
 #endif
 }
 
@@ -1049,10 +1071,29 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    debug("Found %d int args, %d float args, %d instrumented args and %d prototype args for [%s] which is at " FMT_ADR " with a frame at " FMT_ADR,
          args->intCount, args->floatCount, args->instCount, args->count, demangled,addr-symbolOffset,frameAddr);
 
+   for (int i=0; i<args->count; i++)
+   {
+      args->arg[i].size = getSizeByType(args->arg[i].type);
+      debug("   arg %d: type: %s, size: %d", i, args->arg[i].type, args->arg[i].size ); 
+   }
 
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
-   if (args->instCount)
+   if (args->instAddr.startTagAddr)
    {
+      Elf_Addr addrArg = args->instAddr.startTagAddr +4;
+      for (int i = 0; i < args->count; i++)
+      {
+         int nextSize = args->arg[i].size;
+         debug("next read size %d at "FMT_ADR, nextSize, addrArg);
+         if( addrArg % nextSize != 0)
+         {
+            addrArg += nextSize - addrArg % nextSize;
+            debug("adjusting next argument address for alignment to "FMT_ADR, addrArg);
+         }
+         addInstrumentedArgument(p, args, i, addrArg, nextSize);
+         addrArg +=nextSize;
+      }
+     
       if (args->count != args->instCount)
          warning("Instrumented argument count (%d) doesn't match prototype (%d)", args->instCount, args->count);
 
