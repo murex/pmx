@@ -47,23 +47,41 @@ int getSizeByType(const char *type)
       return 0;
    }
 
-   if('*' == type[strlen(type) -1])
+   if('*' == type[strlen(type) -1] || '&' == type[strlen(type) -1] || strstr(type, "("))
    {
-      return sizeof(int *);
+      return sizeof(void *);
    }
 
-   if(0 == strcmp(type, "int") || 0 == strcmp(type, "signed int") || 0 == strcmp(type, "unsigned int") || 0 == strcmp(type, "bool"))
+   if(0 == strcmp(type, "signed") || 0 == strcmp(type, "unsigned"))
       return sizeof(int);
-   if(0 == strcmp(type, "long") || 0 == strcmp(type, "signed long") || 0 == strcmp(type, "unsigned long"))
+
+   // strip off signed or unsigned prefix 
+   if(0 == strncmp(type, "signed", 6))
+      type = type + 6;
+   if(0 == strncmp(type, "unsigned", 8))
+      type = type + 8;
+
+   if(0 == strcmp(type, "char"))
+      return sizeof(char);
+   if(0 == strcmp(type, "bool"))
+      return sizeof(bool);
+   if(0 == strcmp(type, "short") || 0 == strcmp(type, "shortint"))  // note "short int" becomes "shortint" in demangled string
+      return sizeof(short int);
+   if(0 == strcmp(type, "int")) 
+      return sizeof(int);
+   if(0 == strcmp(type, "longlong") || 0 == strcmp(type, "longlongint"))
+      return sizeof(long);
+   if(0 == strcmp(type, "long") || 0 == strcmp(type, "longint"))
       return sizeof(long);
    if(0 == strcmp(type, "float"))
-      return sizeof(double);
+      return sizeof(float);
    if(0 == strcmp(type, "double"))
       return sizeof(double);
+   if(0 == strcmp(type, "longdouble"))
+      return sizeof(long double);
 
-   warning("unknown type: %s", type);
-
-   return 0;
+   warning("unknown type: %s, returning default sizeof(void*): %d", type, sizeof(void *));
+   return sizeof(void *);
 }
 
 void debug(const char *format, ...)
@@ -933,7 +951,8 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
    static Elf_Addr lastFoundTag = 0; // To make sure we don't find the tag from the last frame
    unsigned int l; // gcc copies the instrument tags in 4-byte even in 64-bit build
 
-   Elf_Addr addrStartTag, addrEndTag;
+   Elf_Addr addrStartTag=0x0;
+   Elf_Addr addrEndTag=0x0;
    for (addrEndTag = frameAddr; addrEndTag>lastFoundTag && addrEndTag > frameAddr-100*sizeof(Elf_Addr) ; addrEndTag-=sizeof(Elf_Addr))
    {
       readMxProcVM(proc,addrEndTag,&l,sizeof(l));
@@ -1071,11 +1090,6 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    debug("Found %d int args, %d float args, %d instrumented args and %d prototype args for [%s] which is at " FMT_ADR " with a frame at " FMT_ADR,
          args->intCount, args->floatCount, args->instCount, args->count, demangled,addr-symbolOffset,frameAddr);
 
-   for (int i=0; i<args->count; i++)
-   {
-      args->arg[i].size = getSizeByType(args->arg[i].type);
-      debug("   arg %d: type: %s, size: %d", i, args->arg[i].type, args->arg[i].size ); 
-   }
 
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
    if (args->instAddr.startTagAddr)
@@ -1083,12 +1097,12 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
       Elf_Addr addrArg = args->instAddr.startTagAddr +4;
       for (int i = 0; i < args->count; i++)
       {
-         int nextSize = args->arg[i].size;
-         debug("next read size %d at "FMT_ADR, nextSize, addrArg);
+         int nextSize = getSizeByType(args->arg[i].type);
+         debug("   arg %d: type: %s, size: %d, addr: " FMT_ADR, i, args->arg[i].type, nextSize, addrArg); 
          if( addrArg % nextSize != 0)
          {
             addrArg += nextSize - addrArg % nextSize;
-            debug("adjusting next argument address for alignment to "FMT_ADR, addrArg);
+            debug("adjusting next argument address for alignment to " FMT_ADR, addrArg);
          }
          addInstrumentedArgument(p, args, i, addrArg, nextSize);
          addrArg +=nextSize;
@@ -1226,7 +1240,11 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          }
          else if (strcmp(args->arg[i].type,"double")==0)
          {
-            printf("%f", args->arg[i].val.valDouble);
+            printf("%lf", args->arg[i].val.valDouble);
+         }
+         else if (strcmp(args->arg[i].type,"float")==0)
+         {
+            printf("%f", (float)args->arg[i].val.valFloat);
          }
          else
          {
@@ -1234,6 +1252,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
             {
                case 8: printf("%#lx", args->arg[i].val.val); break;
                case 4: printf("%#x",  args->arg[i].val.val4); break;
+               case 2: printf("%#hx",  args->arg[i].val.val4); break;
                case 1: printf("%#hhx", args->arg[i].val.val1); break;
             }
          }
@@ -1484,7 +1503,7 @@ void addInstrumentedArgument(const mxProc *proc, mxArguments *args, int argNumbe
    {
       debug("Error reading argument %d",argNumber);
    }
-   debug("Added Instrumented Argument %d size %d bytes from Address " FMT_ADR " with value " FMT_ADR,argNumber,argLength,argAddr,args->instArg[argNumber].val.val);
+   debug("Added Instrumented Argument %d type %s size %d bytes from Address " FMT_ADR " with value " FMT_ADR,argNumber,args->arg[argNumber].type, argLength,argAddr,args->instArg[argNumber].val.val4);
 }
 
 void addFloatArgument(const mxProc *proc, mxArguments *args, int argNumber, Elf_Addr argAddr, int argLength)

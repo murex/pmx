@@ -90,7 +90,7 @@ typedef struct
 {
    union mxArgValue val;
    Elf_Addr addr;
-   int size; // 1,4 or 8 bytes are supported
+   int size; // 1, 2, 4 or 8 bytes are supported
    char *type;
 }
 mxArgument;

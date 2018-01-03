@@ -11,7 +11,7 @@ using namespace std;
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c );
 int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule);
-void dummyFunc(int a, int b, long c, long d, int e, int f, int g, int h);
+void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f, unsigned short int g, signed int h);
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 {
@@ -55,19 +55,19 @@ int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const 
    mx_instrumentation.end_tag = 0xFABABBA0;
 #endif
 
-   dummyFunc( 1, 2, 3, 4, 5, 6, 7, 8);
+   dummyFunc( 1, true, 3.5, 'a', 5, 6L, 7, 8);
 
 	return 0;
 }
 
-void dummyFunc(int a, int b, long c, long d, int e, int f, int g, int h)
+void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f, unsigned short int g, signed int h)
 {
    PMX_INSTRUMENT(a, b, c, d, e, f, g, h);
 
-   int xx = a * a + b * b + c + d + e + f + g + h;
-   int yy = a * b + a / b;
+   long double xx = a * a + b * b + c + d + e + f + g + h;
+   long double yy = a * b + a / b;
 
-   printf("xx = %d, yy = %d\n", xx, yy);
+   printf("xx = %LF, yy = %LF\n", xx, yy);
    int *x = NULL;
 	printf("p(NULL) = %d\n", *x );	
 }
