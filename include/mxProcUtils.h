@@ -82,8 +82,9 @@ union mxArgValue
    unsigned int val4;
    unsigned char val1;
    double valDouble;
+   long double valLongDouble;
    float valFloat;
-   char valChar[8];
+   char valChar[16];
 };
 
 typedef struct

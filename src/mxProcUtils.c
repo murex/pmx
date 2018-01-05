@@ -1242,6 +1242,10 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          {
             printf("%lf", args->arg[i].val.valDouble);
          }
+         else if(strcmp(args->arg[i].type,"longdouble")==0)
+         {
+            printf("%Lf", args->arg[i].val.valLongDouble);
+         }
          else if (strcmp(args->arg[i].type,"float")==0)
          {
             printf("%f", (float)args->arg[i].val.valFloat);
@@ -1250,6 +1254,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          {
             switch (args->arg[i].size)
             {
+               case 16: printf("%#Lx", args->arg[i].val.val); break;
                case 8: printf("%#lx", args->arg[i].val.val); break;
                case 4: printf("%#x",  args->arg[i].val.val4); break;
                case 2: printf("%#hx",  args->arg[i].val.val4); break;

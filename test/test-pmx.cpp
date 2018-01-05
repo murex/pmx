@@ -11,7 +11,7 @@ using namespace std;
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c );
 int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule);
-void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f, unsigned short int g, signed int h);
+void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f, unsigned short int g, long double h);
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 {
@@ -60,7 +60,7 @@ int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const 
 	return 0;
 }
 
-void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f, unsigned short int g, signed int h)
+void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f, unsigned short int g, long double h)
 {
    PMX_INSTRUMENT(a, b, c, d, e, f, g, h);
 
