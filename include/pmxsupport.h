@@ -13,16 +13,16 @@
 // We add the magic tags at the end, as gcc 4.9 creates a duplicate structure in memory if we initialise with them in place
 #define PMX_INSTRUMENT_START                    \
     volatile struct {                           \
-        unsigned int start_tag __attribute__( ( aligned ( 8 ) ) );
+        unsigned int start_tag __attribute__((aligned(8)));
 
 #ifdef __GNUC__
 #define PMX_INSTRUMENT_HEAD_END                 \
-    unsigned int end_tag __attribute__( ( aligned ( 8 ) ) );                       \
+    unsigned int end_tag __attribute__((aligned(8)));                       \
     } __attribute__((unused)) mx_instrumentation = { \
           0x0,
 #else
 #define PMX_INSTRUMENT_HEAD_END                 \
-    unsigned int end_tag __attribute__( ( aligned ( 8 ) ) );                       \
+    unsigned int end_tag __attribute__((aligned (8)));                       \
     } mx_instrumentation = {                    \
           0x0,
 #endif

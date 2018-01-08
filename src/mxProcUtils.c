@@ -1260,7 +1260,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          {
             switch (args->arg[i].size)
             {
-               case 16: printf("%#Lx", args->arg[i].val.val); break;
+               case 16: printf("%#Lx", args->arg[i].val.valLongDouble); break;
                case 8: printf("%#lx", args->arg[i].val.val); break;
                case 4: printf("%#x",  args->arg[i].val.val4); break;
                case 2: printf("%#hx",  args->arg[i].val.val4); break;
