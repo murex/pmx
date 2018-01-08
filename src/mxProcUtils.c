@@ -947,12 +947,15 @@ int get_arg_types_from_prototype(char *name, mxArguments *args)
 void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbose, mxArguments *args)
 {
 #if !defined(__sparc)
-   static Elf_Addr lastFoundTag = 0; // To make sure we don't find the tag from the last frame
-   Elf_Addr l; 
+   static Elf_Addr lastFrame = 0x0; // Remember the last frame to make sure we don't search too far
+   Elf_Addr l;
+
+   if (lastFrame == 0x0)
+        lastFrame = frameAddr - 200 * sizeof(Elf_Addr); // If this is the first time called, search 1600 bytes into the frame for instrumentation
 
    Elf_Addr addrStartTag=0x0;
    Elf_Addr addrEndTag=0x0;
-   for (addrEndTag = frameAddr; addrEndTag>lastFoundTag && addrEndTag > frameAddr-100*sizeof(Elf_Addr) ; addrEndTag-=sizeof(Elf_Addr))
+   for (addrEndTag = frameAddr; addrEndTag>lastFrame ; addrEndTag-=sizeof(Elf_Addr))
    {
       readMxProcVM(proc,addrEndTag,&l,sizeof(l));
       if (l ==  PMX_INSTRUMENT_END_TAG)
@@ -962,15 +965,14 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
       }
    }
 
-   if (l ==  PMX_INSTRUMENT_END_TAG && addrEndTag != lastFoundTag)
+   if (l ==  PMX_INSTRUMENT_END_TAG && addrEndTag != lastFrame)
    {
-      for (addrStartTag = addrEndTag; addrStartTag>lastFoundTag && addrStartTag > addrEndTag-20*sizeof(Elf_Addr) ; addrStartTag-=sizeof(l))
+      for (addrStartTag = addrEndTag; addrStartTag>lastFrame && addrStartTag > addrEndTag-20*sizeof(Elf_Addr) ; addrStartTag-=sizeof(l))
       {
          readMxProcVM(proc,addrStartTag,&l,sizeof(l));
          if (l ==  PMX_INSTRUMENT_START_TAG)
          {
             debug("PMX Instrumentation: Start tag at " FMT_ADR, addrStartTag);
-            lastFoundTag = addrEndTag;
             break;
          }
       }
@@ -988,6 +990,9 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 
    args->instAddr.startTagAddr = addrStartTag;
    args->instAddr.endTagAddr = addrEndTag;
+
+   lastFrame = frameAddr;
+
 #endif
 }
 
@@ -1090,7 +1095,10 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
       }
 
       if (addrArg != args->instAddr.endTagAddr)
-         warning("Alignment error while reading instrumented data: addrArg = "FMT_ADR" endTagAddr = "FMT_ADR, addrArg, args->instAddr.endTagAddr);
+      {
+         warning("Instrumented function arguments doesn't match the function prototype. Use these arguments with caution as they may be incorrect.");
+         debug("Alignment error while reading instrumented data: addrArg = " FMT_ADR " endTagAddr = " FMT_ADR, addrArg, args->instAddr.endTagAddr);
+      }
 
       for (int i=0; i<args->count && i<args->instCount; i++)
       {
@@ -1346,6 +1354,11 @@ void dumpStack(const mxProc * p, mxLWP_t t, int words)
          printf(" ******** Next Frame is " FMT_ADR " ******** ", nextFrame);
       }
 #endif
+
+      if (currentValue == PMX_INSTRUMENT_START_TAG)
+         printf(" ******** INSTRUMENTATION START ********");
+      else if (currentValue == PMX_INSTRUMENT_END_TAG)
+         printf(" ******** INSTRUMENTATION END ********");
 
       printf("\n");
    }

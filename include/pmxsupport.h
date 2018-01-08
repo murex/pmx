@@ -1,34 +1,37 @@
 #ifndef PMXSUPPORT_HH
 #define PMXSUPPORT_HH
 
-
-#if (defined(__sparc) || defined (WIN32))
-#define PMX_INSTRUMENT(...)
-#define PMX_INSTRUMENT_METHOD(...)
-#else
-
 #define PMX_INSTRUMENT_START_TAG 0xCAFEF00D
 #define PMX_INSTRUMENT_END_TAG   0xFABABBA0
+
+/* only work on gcc with Unixes */
+#define PMX_ENABLED (defined(__amd64) && defined(__GNUC__) && !defined(WIN32))
+
+#if !(PMX_ENABLED)
+#define PMX_INSTRUMENT(...)
+#define PMX_INSTRUMENT_METHOD(...)
+
+#else /*PMX_ENABLED*/
+
+#ifdef __GNUC__
+#define PMX_INSTRUMENTATION_ATTR __attribute__((unused))
+#else /*!__GNUC__*/
+#define PMX_INSTRUMENTATION_ATTR
+#endif /*__GNUC__*/
 
 // We add the magic tags at the end, as gcc 4.9 creates a duplicate structure in memory if we initialise with them in place
 #define PMX_INSTRUMENT_START                    \
     volatile struct {                           \
         unsigned int start_tag __attribute__((aligned(8)));
 
-#ifdef __GNUC__
 #define PMX_INSTRUMENT_HEAD_END                 \
     unsigned int end_tag __attribute__((aligned(8)));                       \
-    } __attribute__((unused)) mx_instrumentation = { \
+    } PMX_INSTRUMENTATION_ATTR mx_instrumentation = { \
           0x0,
-#else
-#define PMX_INSTRUMENT_HEAD_END                 \
-    unsigned int end_tag __attribute__((aligned (8)));                       \
-    } mx_instrumentation = {                    \
-          0x0,
-#endif
 
 #define PMX_INSTRUMENT_END                      \
-         0x0 } ; \
+        0x0 \
+    }; \
 mx_instrumentation.start_tag=PMX_INSTRUMENT_START_TAG; \
 mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
 
@@ -141,5 +144,9 @@ mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
     void *zthis = this;                         \
     PMX_INSTRUMENT9(zthis,A,B,C,D,E,F,G,H)
 
-#endif
-#endif
+#endif /*PMX_ENABLED*/
+
+#endif /*PMXSUPPORT_HH*/
+
+
+
