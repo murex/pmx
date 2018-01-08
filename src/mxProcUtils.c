@@ -22,7 +22,6 @@
 #include "pmx.h"
 #include "pmxsupport.h"
 
-//#include "lib/common/mxconst/h/mx_version.h"
 
 static const char *unknownSymbol = "??????";
 
@@ -55,7 +54,7 @@ int getSizeByType(const char *type)
    if(0 == strcmp(type, "signed") || 0 == strcmp(type, "unsigned"))
       return sizeof(int);
 
-   // strip off signed or unsigned prefix 
+   // strip off signed or unsigned prefix
    if(0 == strncmp(type, "signed", 6))
       type = type + 6;
    if(0 == strncmp(type, "unsigned", 8))
@@ -67,7 +66,7 @@ int getSizeByType(const char *type)
       return sizeof(bool);
    if(0 == strcmp(type, "short") || 0 == strcmp(type, "shortint"))  // note "short int" becomes "shortint" in demangled string
       return sizeof(short int);
-   if(0 == strcmp(type, "int")) 
+   if(0 == strcmp(type, "int"))
       return sizeof(int);
    if(0 == strcmp(type, "longlong") || 0 == strcmp(type, "longlongint"))
       return sizeof(long);
@@ -971,7 +970,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
          if (l ==  PMX_INSTRUMENT_START_TAG)
          {
             debug("PMX Instrumentation: Start tag at " FMT_ADR, addrStartTag);
-      		lastFoundTag = addrEndTag;
+            lastFoundTag = addrEndTag;
             break;
          }
       }
@@ -1015,31 +1014,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
       functionName = get_function_name_from_prototype(demangled);
 
       char * shortFunctionName = get_short_function_name(functionName);
-#ifdef __sun
-      // Look at the mangled symbol to try to determine if we are a standard function (including static method) or a real method
-      // Search for the funciton name in the mangled symbol followed by the number 6, then get the letter following it
-      char mangledFunction[10240];
-      sprintf(mangledFunction,"%s6",shortFunctionName);
-      const char *c = strstr(symbolName,mangledFunction);
-      if (c)
-      {
-         c+=strlen(mangledFunction);
 
-         // Sometimes we see the k flag first.  We should skip it.
-         if (*c=='k')
-            c++;
-
-         if (*c =='M' || *c == 'F')
-         {
-            debug("Found method type %c in demangled symbol", *c);
-            symbolType=*c;
-         }
-         else
-         {
-            debug("Found unknown symbol flag %c", *c);
-         }
-      }
-#endif
       // operators are methods
       if (symbolType=='U' && !strncmp(shortFunctionName,"operator",8))
       {
@@ -1098,7 +1073,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
       for (int i = 0; i < args->count; i++)
       {
          int nextSize = getSizeByType(args->arg[i].type);
-         debug("   arg %d: type: %s, size: %d, addr: " FMT_ADR, i, args->arg[i].type, nextSize, addrArg); 
+         debug("   arg %d: type: %s, size: %d, addr: " FMT_ADR, i, args->arg[i].type, nextSize, addrArg);
          if( addrArg % nextSize != 0)
          {
             addrArg += nextSize - addrArg % nextSize;
@@ -1248,7 +1223,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          {
             printf("%lf", args->arg[i].val.valDouble);
          }
-         else if(strcmp(args->arg[i].type,"longdouble")==0)
+         else if (strcmp(args->arg[i].type,"longdouble")==0)
          {
             printf("%Lf", args->arg[i].val.valLongDouble);
          }
