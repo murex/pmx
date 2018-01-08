@@ -949,7 +949,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 {
 #if !defined(__sparc)
    static Elf_Addr lastFoundTag = 0; // To make sure we don't find the tag from the last frame
-   unsigned int l; // gcc copies the instrument tags in 4-byte even in 64-bit build
+   Elf_Addr l; 
 
    Elf_Addr addrStartTag=0x0;
    Elf_Addr addrEndTag=0x0;
@@ -1094,7 +1094,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
    if (args->instAddr.startTagAddr)
    {
-      Elf_Addr addrArg = args->instAddr.startTagAddr +4;
+      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(Elf_Addr);
       for (int i = 0; i < args->count; i++)
       {
          int nextSize = getSizeByType(args->arg[i].type);
@@ -1107,9 +1107,15 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          addInstrumentedArgument(p, args, i, addrArg, nextSize);
          addrArg +=nextSize;
       }
-     
-      if (args->count != args->instCount)
-         warning("Instrumented argument count (%d) doesn't match prototype (%d)", args->instCount, args->count);
+
+      if( addrArg % sizeof(Elf_Addr) != 0)
+      {
+         addrArg += sizeof(Elf_Addr) - addrArg % sizeof(Elf_Addr);
+         debug("   adjusting address alignment to read instrumentation end tag at " FMT_ADR, addrArg);
+      }
+
+      if (addrArg != args->instAddr.endTagAddr)
+         warning("Alignment error while reading instrumented data: addrArg = "FMT_ADR" endTagAddr = "FMT_ADR, addrArg, args->instAddr.endTagAddr);
 
       for (int i=0; i<args->count && i<args->instCount; i++)
       {
