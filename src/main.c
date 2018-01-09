@@ -14,8 +14,6 @@
 #include <getopt.h>
 #include <dlfcn.h>
 
-//#include "lib/common/mxconst/h/mx_version.h"
-
 #include "mxProcUtils.h"
 #include "pmx.h"
 

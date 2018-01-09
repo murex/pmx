@@ -16,79 +16,13 @@
 #include "mxProcUtils.h"
 #include "pmx.h"
 
-void debug(const char *format, ...);
-
-void print_null(const mxProc *, const char *, const char *);
-void print_double_pointer(const mxProc *, const char *, const char *, Elf_Addr);
-void print_int_argument(const mxProc *, const char *, const char *, Elf_Addr);
-void print_int_pointer(const mxProc *, const char *, const char *, Elf_Addr);
-void print_void_pointer(const mxProc *, const char *, const char *, Elf_Addr);
-void print_raw1k(const mxProc *, const char *, const char *, Elf_Addr);
-void print_disassemble(const mxProc *, const char *, const char *, Elf_Addr);
-
 static int inlineMode=0;
 
 static int printArgv=0; // enabler flag for  print_main_argv
-static void print_argv(const mxProc *proc, int argc, Elf_Addr argv);
-int print_main_argv(const mxProc *proc, const char *name, const char *comment, mxArguments *args);
-
-int print_corrupt_heap(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-int print_jvm_full(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-int print_libc_message(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-
-int print_strlen(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-int print_strcpy(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-int print_sprintf(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-int print_snprintf(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
-int print_strcmp(const mxProc * proc, const char *name, const char *comment, mxArguments *args);
 
 // Note that almost all structures are passed as pointes.  Make sure you include * in the definition below.
 static TypePrinterEntry *type_printer_for_type = NULL;
 static TypePrinterEntry type_printer_default[] = {
-   /*
-   {"MD_UTF8", print_utf8, NULL, 1, 1},
-   {"mxStaticsStream_templatesTEMPLATE", murex::pmx::mx_extractor::extract_mxStaticsStream_templatesTEMPLATE, "RT_INSTRUMENT_GENERATOR", 1, 1},
-   {"murex::rates::instrument::Instrument", murex::pmx::mx_extractor::extract_murex_rates_instrument_Instrument, "RT_INSTRUMENT", 1, 1},
-   {"SPB_HDR_DESC", print_trn_hdr_desc, NULL, 1, 1},
-   {"SPB_TRN_DATA", print_spb_trn_data, NULL, 1, 1},
-   {"mxSIM_DEAL", print_sim_deal, NULL, 1, 1},
-   {"mxRiskBASE_ENGINE", print_simulation, "mxSIMULATION", 1, 1},
-   {"IRM_DEAL", print_irm_deal, NULL, 1, 1},
-   {"seROOT_K", print_se_root_k, NULL, 1, 1},
-   {"seROOT_DATA", print_se_root_data, NULL, 1, 1},
-   {"seHEADER_DATA", print_se_header_data, NULL, 1, 1},
-   {"XML_TREE", print_xml_tree, NULL, 1, 1},
-   {"RT_CT_KEY", print_rt_ct_key, NULL, 1, 1},
-   {"fmxDLL_INTERFACE_DATA", print_fxmdll_interface_data, NULL, 1, 1},
-   {"murex::marketdata::curve::Curve", print_rt_ct_stru, "mxMarketdataCURVE, RT_CT_STRU", 1, 1},
-   {"xSPBDYN_DBF_BLOCK_OUTPUT", print_xSPBDYN_DBF_BLOCK_OUTPUT, NULL, 1, 1},
-   {"mxMarketdataSHEET_PILLAR_KEY", print_mxMarketdataSHEET_PILLAR_KEY, NULL, 1, 1},
-   {"murex::listed::referenceData::Security", print_seSECURITY_DATA, "seSECURITY_DATA, mxStaticsSecuritiesSECURITY", 1, 1},
-   {"RT_CT_EL_STRU", print_RT_CT_EL_STRU, NULL, 1, 1},
-   {"mxSI_REQUEST", print_mxSI_REQUEST, NULL, 1, 1},
-   {"VWR_VIEW_ELEMENT", print_VWR_VIEW_ELEMENT, NULL, 1, 1},
-   {"VWR_CONTROL", print_VWR_CONTROL, NULL, 1, 1},
-   {"VWR_OBJECT_HEADER", print_VWR_OBJECT_HEADER, NULL, 1, 1},
-   {"VWR_OBJECT", print_VWR_OBJECT, NULL, 1, 1},
-   {"spbWAREHOUSE_EVENT_HEADER", print_spbWAREHOUSE_EVENT_HEADER, NULL, 1, 1},
-   {"spbPOS_CLASSIFICATION_KEY", print_spbPOS_CLASSIFICATION_KEY, NULL, 1, 1},
-   {"xSPB_FINKEY", print_xSPB_FINKEY, NULL, 1, 1},
-   {"murex::marketdata::volatility::VolatilityCurve", print_volcurve, "mxMarketdataVOLATILITY_CURVE", 1, 1},
-   {"npdDEAL", print_npd_deal, "NPD_DEAL", 1, 1},
-   {"npdLEG", print_npd_leg, NULL, 1, 1},
-   {"npdTYPE", print_npd_type, NULL, 1, 1},
-   {"ebxBOX", print_ebxBOX, NULL, 1, 1},
-   {"frmFILE", print_frmFILE, NULL, 1, 1},
-   {"frmNODE", print_frmNODE, NULL, 1, 1},
-   {"frmTREE", print_frmTREE, NULL, 1, 1},
-   {"mxDLL_GMP_CURVE_KEY", print_mxDLL_GMP_CURVE_KEY, NULL, 1, 1},
-   {"mxDLL_GMP_INSTRUMENT_KEY", print_mxDLL_GMP_INSTRUMENT_KEY, NULL, 1, 1},
-
-   {"xMMS_TBL", print_mmsTBL, "mmsTBL", 1, 0},
-   {"ownTBL", print_ownTBL, NULL, 1, 0},
-   {"MD_CONTAINER", print_MD_CONTAINER, NULL, 1, 0},
-   */
-
    // Generic types and tools.  Many are turned off by default to avoid noise
    {"char", print_string_argument, "Null terminated array", 1, 1},
    {"std::string", print_std_string, NULL, 1, 1},
