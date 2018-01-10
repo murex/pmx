@@ -157,23 +157,47 @@ void print_arbitrary_type(const mxProc *proc, Elf_Addr addr, const char *dataTyp
 
 void print_double(const char *function_name, const char *type, const mxProc * proc, Elf_Addr offset)
 {
-   double v = read_double(proc, offset);
-
-   printf("%s: %s=%lld\n", function_name, type, (long long) v);
+   if( type[0] == '*' )
+   {
+      Elf_Addr a = read_addr(proc, offset);
+      double v = read_double(proc, a);
+      printf("%s: %s=%f (at 0x%x)\n", function_name, type, v, a);
+   }
+   else
+   {
+      double v = read_double(proc, offset);
+      printf("%s: %s=%f\n", function_name, type, v);
+   }
 }
 
 void print_long(const char *function_name, const char *type, const mxProc * proc, Elf_Addr offset)
 {
-   long v = read_long(proc, offset);
-
-   printf("%s: %s=%ld\n", function_name, type, v);
+   if( type[0] == '*' )
+   {
+      Elf_Addr a = read_addr(proc, offset);
+      long v = read_long(proc, a);
+      printf("%s: %s=%ld (at 0x%x)\n", function_name, type, v, a);
+   }
+   else
+   {
+      long v = read_long(proc, offset);
+      printf("%s: %s=%ld\n", function_name, type, v);
+   }
 }
 
 void print_int(const char *function_name, const char *type, const mxProc * proc, Elf_Addr offset)
 {
-   int v = read_int(proc, offset);
-
-   printf("%s: %s=%d\n", function_name, type, v);
+   if( type[0] == '*' )
+   {
+      Elf_Addr a = read_addr(proc, offset);
+      int v = read_int(proc, a);
+      printf("%s: %s=%d (at 0x%x)\n", function_name, type, v, a);
+   }
+   else
+   {
+      int v = read_int(proc, offset);
+      printf("%s: %s=%d\n", function_name, type, v);
+   }
 }
 
 void print_double_with_decimal(const char *function_name, const char *type, mxProc * proc, Elf_Addr offset)
