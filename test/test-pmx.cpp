@@ -12,6 +12,16 @@ using namespace std;
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c );
 int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule);
 void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f, unsigned short int g, long double h);
+void singleArg(int a);
+
+void singleArg(int a)
+{
+   PMX_INSTRUMENT(a);
+   int b = a;
+   printf("b = %d\n", b);
+   int *x = NULL;
+	printf("p(NULL) = %d\n", *x );	
+}
 
 int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 {
@@ -68,8 +78,7 @@ void dummyFunc(double a, bool b, float c, unsigned char d, signed e, long long f
    long double yy = a * b + a / b;
 
    printf("xx = %LF, yy = %LF\n", xx, yy);
-   int *x = NULL;
-	printf("p(NULL) = %d\n", *x );	
+   singleArg(e);
 }
 
 int main( int argc, char **argv )
