@@ -948,14 +948,14 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 {
 #if !defined(__sparc)
    static Elf_Addr lastFrame = 0x0; // Remember the last frame to make sure we don't search too far
-   Elf_Addr l;
+   unsigned long l;
 
    if (lastFrame == 0x0)
         lastFrame = frameAddr - 200 * sizeof(Elf_Addr); // If this is the first time called, search 1600 bytes into the frame for instrumentation
 
    Elf_Addr addrStartTag=0x0;
    Elf_Addr addrEndTag=0x0;
-   for (addrEndTag = frameAddr; addrEndTag>lastFrame ; addrEndTag-=sizeof(Elf_Addr))
+   for (addrEndTag = frameAddr; addrEndTag>lastFrame ; addrEndTag-=sizeof(l))
    {
       readMxProcVM(proc,addrEndTag,&l,sizeof(l));
       if (l ==  PMX_INSTRUMENT_END_TAG)
@@ -1074,7 +1074,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
    if (args->instAddr.startTagAddr)
    {
-      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(Elf_Addr);
+      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(unsigned long);
       for (int i = 0; i < args->count; i++)
       {
          int nextSize = getSizeByType(args->arg[i].type);
@@ -1088,9 +1088,9 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          addrArg +=nextSize;
       }
 
-      if( addrArg % sizeof(Elf_Addr) != 0)
+      if( addrArg % sizeof(unsigned long) != 0)
       {
-         addrArg += sizeof(Elf_Addr) - addrArg % sizeof(Elf_Addr);
+         addrArg += sizeof(unsigned long) - addrArg % sizeof(unsigned long);
          debug("   adjusting address alignment to read instrumentation end tag at " FMT_ADR, addrArg);
       }
 
