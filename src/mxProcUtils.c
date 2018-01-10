@@ -1094,6 +1094,37 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          debug("   adjusting address alignment to read instrumentation end tag at " FMT_ADR, addrArg);
       }
 
+      // read the instrumented %rbp
+      unsigned long addr_rbp = 0;
+      if (readMxProcVM(p, addrArg, &addr_rbp, sizeof(addr_rbp)))
+      {
+         debug("Error reading %%rbp address " FMT_ADR, addrArg);
+      }
+      debug("saved %%rbp read is: "FMT_ADR, addr_rbp);
+
+      // check the first frame stack pointer matches the instrument saved stack pointer
+      static bool firstFrame = true;
+      if(firstFrame)
+      {
+         bool match = false;
+         int i = 0;
+         // the first thread should match, but we traverse LWPs to make sure it's not missed.
+         for( ; i < p->nLWPs; i++)
+         {
+            if(addr_rbp == p->LWPs[i].fp)
+            {
+               match = true;
+               debug("found thread %d matching the %%rbp.", i);
+               break;
+            }
+         }  
+         if(!match)
+            warning("Instrumented frame pointer "FMT_ADR" doesn't match first frame pointer "FMT_ADR". Use these arguments with caution as they may be incorrect.", addr_rbp, p->LWPs[i].fp);
+         firstFrame = false;
+      }
+
+      addrArg += sizeof(unsigned long);
+
       if (addrArg != args->instAddr.endTagAddr)
       {
          warning("Instrumented function arguments doesn't match the function prototype. Use these arguments with caution as they may be incorrect.");

@@ -25,6 +25,7 @@
         unsigned long start_tag;
 
 #define PMX_INSTRUMENT_HEAD_END                 \
+    unsigned long stackbase;                     \
     unsigned long end_tag;                       \
     } PMX_INSTRUMENTATION_ATTR mx_instrumentation = { \
           0x0,
@@ -32,6 +33,7 @@
 #define PMX_INSTRUMENT_END                      \
         0x0 \
     }; \
+__asm__ ("movq %0,%%rbp" : "=r" (mx_instrumentation.stackbase) ); \
 mx_instrumentation.start_tag=PMX_INSTRUMENT_START_TAG; \
 mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
 
