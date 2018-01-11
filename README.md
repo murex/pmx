@@ -35,9 +35,6 @@ make
 This will build `pmx` binary, a test program `testpmx` which could generate a core file, 
 and a shared library plugin customized type printer defined in `test/lib` diretory.
 
-```
-
-
 To test:
 
 ```
