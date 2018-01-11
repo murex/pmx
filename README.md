@@ -50,7 +50,7 @@ cd bin
 
 ## License
 
-`pmx` is released under Eclipse Public License v1.0 ([here](LICENSE.txt])).
+`pmx` is released under Eclipse Public License v1.0 [here](LICENSE.txt]).
 
 ## Contributing 
 
