@@ -50,6 +50,12 @@ cd bin
 
 ## License
 
+`pmx` is released under Eclipse Public License v1.0 ([here](LICENSE.txt])).
+
+## Contributing 
+
+The master branch of this repository contains the latest stable changes. Pull requests should be submitted against the latest head of master. See [here](CONTRIBUTING.md) for contributing agreement.
+
 ## Contact
 
 pmx-support@murex.com
