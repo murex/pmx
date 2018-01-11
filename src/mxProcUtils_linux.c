@@ -225,8 +225,8 @@ int readMxProcVM(const mxProc * p, Elf_Addr vmAddr, void *buffPointer, size_t si
       }
       else if (fileAddr == ADDR_NULLVALUES || endAddr == ADDR_NULLVALUES)
       {
-         warning("Reads across used/unused memory boundaries are not supported (base " FMT_ADR " + size %#lx).", vmAddr, size);
-         return 0;
+         debug("Reads across used/unused memory boundaries are not supported (base " FMT_ADR " + size %#lx).", vmAddr, size);
+         return 1;
       }
 
       readFile(p, elfFile, fileAddr, buff, size);
