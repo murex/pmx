@@ -1,5 +1,9 @@
 AC_INIT(pmx, 1.0, pmx-support@murex.com)
 
+AC_DEFINE(PMX_VERSION_MAJOR, "1", "pmx major version")
+AC_DEFINE(PMX_VERSION_MINOR, "0", "pmx minor version")
+AC_DEFINE(PMX_BUILD_ID, "2018", "pmx build id")
+
 : ${CFLAGS=""}
 : ${CXXFLAGS=""}
 

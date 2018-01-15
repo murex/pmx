@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
    if (errflg || (argc < 1 && print_types == 0) || argc > 2)
    {
       //              "01234567890123456789012345678901234567890123456789012345678901234567890123456789\n");
-      //fprintf(stderr, "pmx " mxVERSION_EXTERNAL_MAJOR " " mxBUILD_ID "\n");
+      fprintf(stderr, "pmx " PMX_VERSION_MAJOR "." PMX_VERSION_MINOR" build " PMX_BUILD_ID "\n");
       fprintf(stderr, "usage: %s [mode]... [option]... [binary] {pid|core}[/lwps]\n", command);
       fprintf(stderr, "\n");
       fprintf(stderr, "  binary: The name of the binary corresponding to the core/pid.\n");
