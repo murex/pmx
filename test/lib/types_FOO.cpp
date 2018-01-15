@@ -15,12 +15,12 @@
 
 void print_struct_FOO(const mxProc * proc, const char *name, const char *comment, Elf_Addr value)
 {
-	print_int(name, "*a", proc, value + offsetof(struct FOO, a));
-	print_int(name, "*b", proc, value + offsetof(struct FOO, b));
-	print_int(name, "c", proc, value + offsetof(struct FOO, c));
-	print_long(name, "al", proc, value + offsetof(struct FOO, al));
-	print_long(name, "*alp", proc, value + offsetof(struct FOO, alp));
-	print_double(name, "ad", proc, value + offsetof(struct FOO, ad));
-	print_double(name, "*adp", proc, value + offsetof(struct FOO, adp));
-	print_string(name, "str", proc, read_addr(proc, value + offsetof(struct FOO, str)));
+	print_int("FOO", "*a", proc, value + offsetof(struct FOO, a));
+	print_int("FOO", "*b", proc, value + offsetof(struct FOO, b));
+	print_int("FOO", "c", proc, value + offsetof(struct FOO, c));
+	print_long("FOO", "al", proc, value + offsetof(struct FOO, al));
+	print_long("FOO", "*alp", proc, value + offsetof(struct FOO, alp));
+	print_double("FOO", "ad", proc, value + offsetof(struct FOO, ad));
+	print_double("FOO", "*adp", proc, value + offsetof(struct FOO, adp));
+	print_string("FOO", "str", proc, read_addr(proc, value + offsetof(struct FOO, str)));
 }

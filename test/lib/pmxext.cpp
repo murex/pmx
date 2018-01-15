@@ -18,6 +18,7 @@ extern "C" {
 
 TypePrinterEntry type_printer_extension[] = {
       {"FOO", print_struct_FOO, "customized FOO struct", 1, 1},
+      // always include a NULL entry at the end of the array
       {NULL, NULL, NULL, 1, 0}
 };
 
