@@ -43,7 +43,7 @@
 #define PMX_INSTRUMENT_END                      \
         0x0 \
     }; \
-__asm__ ("movq %0,%%rbp" : "=r" (mx_instrumentation.stackbase) ); \
+__asm__ ("movq %%rbp,%0" : "=r" (mx_instrumentation.stackbase) ); \
 mx_instrumentation.start_tag=PMX_INSTRUMENT_START_TAG; \
 mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
 
