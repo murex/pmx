@@ -4,8 +4,8 @@
 
 ## Supported Architecture
 
-- :white_check_mark: Linux x86_64 
-- :white_check_mark: Linux i686
+- [x] Linux x86_64 
+- [x] Linux i686
 
 ## Features
 
@@ -93,8 +93,6 @@ volatile struct {  // must be volatile so it isn't optimised away.
     d,
     0xFABABBA0 // Magic number end tag
   };
-mx_instrumentation.start_tag=0xCAFEF00D; 
-mx_instrumentation.end_tag=0xFABABBA0;
 ```
 
 ## Compile and Test
