@@ -1,12 +1,11 @@
-# PMX 
+# PMX
 
 `pmx` is a tool to assist with analysing process or core file of ELF format.
 
 ## Supported Architecture
 
-* [x] Linux x86_64
-* [x] Linux i686
-* [ ] Solaris x86
+- :white_check_mark: Linux x86_64 
+- :white_check_mark: Linux i686
 
 ## Features
 
@@ -28,51 +27,75 @@ To see all thread, use the `--all-threads` option.
 `pmx` assumes the process runs in current directory. To load dependent libraries from another 
 directory, use the `-l` or `--sysroot` option.
 
-Full command options can be found from `pmx -h` command::
-
-    ./pmx -h
-    usage: pmx [mode]... [option]... [binary] {pid|core}[/lwps]
-    
-      binary: The name of the binary corresponding to the core/pid.
-              This will be automatically detected if omitted.
-      lwps:   The lwps/thread to analyse.  By default the first thread is analysed.
-              To analyse all lwps/threads, use the --all-threads.
-    
-    Standard Modes:
-      --extract, -g            Extract known data structures from stack. (default)
-      --pargs, -m              Print process arguments.
-      --pstack, -s             Print stack trace.  Implies --extract.
-      --pldd, -b               Print loaded libraries.
-      --all, -e                The same as --extract --pargs --pstack --pldd.
-    
-    Advanced Modes:
-      --pmap, -c               Print memory map of process.
-      --show-types, -t         Print supported data types.
-      --raw-stack=n, -r n      Print n words from of the raw stack.
-      --address=addr, -x addr  Print data structure at addr.  Use with --type.
-                               addr can be a hex address (0x1234) or a symbol.
-    
-    Options:
-      --inline, -i             Print all data to stdout rather than creating files.
-      --force, -k              Run even if the binary doesn't match the core.
-      --args=n, -a n           Print n (default 8) arguments for functions when we
-                               don't know better.  Use with --pstack.
-      --type=type, -d type     Type of data structure printed by --address.
-                               Use -t to list supported types.  Default is RAW1K.
-      --all-threads, -f        Process all threads, rather than just the first.
-      --sysroot=path, -l path  Use path as system root for loading libraries with
-      --libext=path, -L path   Path to customized type checker, default is libpmxext.so.
-                               absolute references. Like 'set sysroot' in gdb.
-      --output-prefix=path, -p path
-                               Use path as the prefix for output files.
-                               If unspecified, the core file name is used.
-      --corrupt-stack=n, -j n  Search this many words for a valid frame in the case
-                               of stack corruption.  Default 200.
-      --verbose, -v            Print pmx debugging/troubleshooing information.
+Full command options can be found from `pmx -h` command output.
 
 
 ## Extending `pmx` for Customized Data Types
 
+`pmx` will parse and extract all primitive data types in C/C++. However, it's possible to
+extend `pmx` to parse composite data types and classes with an extenion shared library. 
+
+An extension should be define an `TypePrinterEntry` array named *type_printer_extension*. 
+When `pmx` starts, it'll find the `libpmxext.so` library (configurable with `-L` option) and 
+append the customized type printer to the supported type list. Refer to 
+[test/lib/pmxext.cpp]([test/lib/pmxext.cpp) and the accompanying [type_FOO.cpp](test/lib/type_FOO.cpp)
+files for detail.
+
+## Working with Optimized Code
+
+`pmx` relies on the arguments to be passed onto stack. When code is compiled with 
+optimization, the compiler may optimize out arguments for efficiency. `pmx` provides a macro
+to instrument the function and save a copy of the arguments on the stack for easy argument 
+extraction.
+
+To instrument a function, call the `PMX_INSTRUMENT()` macro with all the argument 
+at the very first line of the function.
+
+```cpp
+#include "pmxsupport.h"
+
+// Example of standard C function, or static C++ method. Up to 9 arguments are supported
+static int foo(const char *a, int b, char *c, int d, const char *e)
+{
+   PMX_INSTRUMENT(a, b, c, d, e);
+   // rest of function 
+}
+
+//Example of a (non-static) C++ method.  Up to 8 arguments are supported.
+voi bar(void *a, int b, double c, char d)
+{
+   // Note that 'this' is automatically added to the arguments by the macro, and can be analysed by pmx.
+   PMX_INSTRUMENT_METHOD(a, b, c, d);
+
+   // Rest of method
+}
+```
+
+If you are interested in what the macro translates to, the instrumentation of `bar()` would expand to:
+
+```cpp
+void *vthis = this; // Syntactic work around as we can't dereference 'this' directly.  No impact on compiled code.
+volatile struct {  // must be volatile so it isn't optimised away.
+    unsigned long start_tag;
+    void * pmx_vthis;
+    void *pmx_a;
+    int pmx_b;
+    double pmx_c;
+    char pmx_d;
+    unsigned long end_tag;
+  } mx_instrumentation =
+  {
+    0xCAFEF00D, // Magic number start tag
+    vthis,
+    a,
+    b,
+    c,
+    d,
+    0xFABABBA0 // Magic number end tag
+  };
+mx_instrumentation.start_tag=0xCAFEF00D; 
+mx_instrumentation.end_tag=0xFABABBA0;
+```
 
 ## Compile and Test
 
