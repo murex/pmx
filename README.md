@@ -38,7 +38,7 @@ extend `pmx` to parse composite data types and classes with an extenion shared l
 An extension should be define an `TypePrinterEntry` array named *type_printer_extension*. 
 When `pmx` starts, it'll find the `libpmxext.so` library (configurable with `-L` option) and 
 append the customized type printer to the supported type list. Refer to 
-[test/lib/pmxext.cpp]([test/lib/pmxext.cpp) and the accompanying [type_FOO.cpp](test/lib/type_FOO.cpp)
+[test/lib/pmxext.cpp](test/lib/pmxext.cpp) and the accompanying [types_FOO.cpp](test/lib/types_FOO.cpp)
 files for detail.
 
 ## Working with Optimized Code
