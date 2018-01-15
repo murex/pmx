@@ -1,3 +1,13 @@
+/*******************************************************************************
+*
+* Copyright (c) {2003-2018} Murex S.A.S. and its affiliates.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+*******************************************************************************/
+
 #include <stdio.h>
 #include <iostream>
 #include <cstring>
@@ -5,7 +15,6 @@
 
 #include "structFOO.h"
 #include "pmxsupport.h"
-//#include "pmx_stackcontext.hpp"
 
 using namespace std;
 
@@ -35,35 +44,7 @@ int foo( std::string t, FOO *p, char *s, int a, int *b, int c )
 
 int bar(FOO *f, const char *cmd, int flag, char *tabname, int filterType, const char *condition, bool fWithCond, int exceptionRule)
 {
-#if 1
 	PMX_INSTRUMENT(f, cmd, flag, tabname, filterType, condition, fWithCond, exceptionRule);
-#else // debug -- expand the PMX_INSTRUMENT macro
-   volatile struct {
-      unsigned int start_tag;
-      unsigned long pmx_f;
-      unsigned long pmx_cmd;
-      unsigned long pmx_flag;
-      unsigned long pmx_tabname;
-      unsigned long pmx_filterType;
-      unsigned long pmx_condition;
-      unsigned long pmx_fWithCond;
-      unsigned long pmx_exRule;
-      unsigned int end_tag;
-   } __attribute__((unused))
-   mx_instrumentation = {0x0,
-      *(unsigned long *)&f,
-      *(unsigned long *)&cmd,
-      *(unsigned long *)&flag,
-      *(unsigned long *)&tabname,
-      *(unsigned long *)&filterType,
-      *(unsigned long *)&condition,
-      *(unsigned long *)&fWithCond,
-      *(unsigned long *)&exceptionRule,
-      0x0};
-
-   mx_instrumentation.start_tag = 0xCAFEF00D;
-   mx_instrumentation.end_tag = 0xFABABBA0;
-#endif
 
    dummyFunc( 1, true, 3.5, 'a', 5, 6L, 7, 8);
 

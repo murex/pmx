@@ -1,13 +1,19 @@
-/*
- *  Copyright Murex S.A.S., 2003-2013. All Rights Reserved.
- *
- *  This software program is proprietary and confidential to Murex S.A.S and
- *  its affiliates ("Murex") and, without limiting the generality of the
- *  foregoing reservation of rights, shall not be accessed, used, reproduced
- *  or distributed without the express prior written consent of Murex and
- *  subject to the applicable Murex licensing terms. Any modification or
- *  removal of this copyright notice is expressly prohibited.
- */
+/*******************************************************************************
+*
+* Copyright (c) {2003-2018} Murex S.A.S. and its affiliates.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*    MARTENSON Elias
+*    ANDERSON Philip
+*    LEGRAND Mathieu
+*    MATOT Jerome
+*    YUAN Zijing
+*******************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <set>
@@ -26,10 +32,8 @@ static TypePrinterEntry type_printer_default[] = {
    // Generic types and tools.  Many are turned off by default to avoid noise
    {"char", print_string_argument, "Null terminated array", 1, 1},
    {"std::string", print_std_string, NULL, 1, 1},
-   /* Doubles don't work correctly at the moment
    {"double", print_double_argument, "Use 'double' to cast supplied value as a double", 0, 0},
    {"double", print_double_pointer, "Use 'double*' to read double from memory", 1, 0},
-   */
    {"int", print_int_argument, "Use 'int' to cast supplied value as an int", 0, 0},
    {"int", print_int_pointer, "Use 'int*' to read int from memory", 1, 0},
    {"pointer", print_void_pointer, "Use to dereference a pointer locations", 1, 0},
@@ -39,9 +43,6 @@ static TypePrinterEntry type_printer_default[] = {
 };
 
 static FunctionPrinterEntry function_printers[] = {
-   /*
-   {"eqMacsComputeOptionAux", print_eqMacsComputeOptionAux},
-*/
    {"main", print_main_argv},
 
    {"jni_SetByteArrayRegion", print_jvm_full},
@@ -480,157 +481,157 @@ void print_raw1k(const mxProc *proc, const char *name, const char *comment, Elf_
       //Address
       printf(FMT_ADR": ",(unsigned long)addr);
 
-//Hex
-for (int j=0; j<perLine; j++)
-printf("%02x ",(unsigned int)raw[j]);
-printf(" ");
+      //Hex
+      for (int j=0; j<perLine; j++)
+         printf("%02x ",(unsigned int)raw[j]);
+      printf(" ");
 
-//Raw char
-for (int j=0; j<perLine; j++)
-printf("%c",raw[j]);
-printf("\n");
+      //Raw char
+      for (int j=0; j<perLine; j++)
+         printf("%c",raw[j]);
+      printf("\n");
 
 
-addr+=perLine;
-}
+      addr+=perLine;
+   }
 }
 
 void print_disassemble(const mxProc *proc, const char *name, const char *comment, Elf_Addr disAddr)
 {
 #if defined (_LP64) && (__x86_64)
-getArguments(proc,disAddr,0x0,1);
+   getArguments(proc,disAddr,0x0,1);
 #else
-printf("Disassembly only supported on x86 64bit\n");
+   printf("Disassembly only supported on x86 64bit\n");
 #endif
 }
 
 int print_corrupt_heap(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-static int warned=0;
-if (! warned++)
-warning("Heap memory corruption has been detected. Analysis with Purify/Valgrind is required.");
+   static int warned=0;
+   if (! warned++)
+      warning("Heap memory corruption has been detected. Analysis with Purify/Valgrind is required.");
 
-return 1;
+   return 1;
 }
 
 int print_jvm_full(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-static int warned=0;
-if (! warned++)
-warning("JVM heap may be full. Consider increasing /MXJ_JVM:-Xmx to a higher value.");
+   static int warned=0;
+   if (! warned++)
+      warning("JVM heap may be full. Consider increasing /MXJ_JVM:-Xmx to a higher value.");
 
-return 1;
+   return 1;
 }
 
 int print_libc_message(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-// __libc_message takes a variable number of arguments
-// First is an action - we ignore this
-// Second is a printf like format string
-// The remaining args are the format string args
-//
-if (args->count < 2) // We need at least 2 args
-return 0;
+   // __libc_message takes a variable number of arguments
+   // First is an action - we ignore this
+   // Second is a printf like format string
+   // The remaining args are the format string args
+   //
+   if (args->count < 2) // We need at least 2 args
+      return 0;
 
-char formatString[10240]= {0};
+   char formatString[10240]= {0};
 
-read_string(proc, args->arg[1].val.val, formatString, sizeof(formatString));
-if (!formatString[0])
-return 0;
+   read_string(proc, args->arg[1].val.val, formatString, sizeof(formatString));
+   if (!formatString[0])
+      return 0;
 
-warning("Encountered glibc message:");
+   warning("Encountered glibc message:");
 
-// Very simple printf style format printer
-int argNo = 0;
-char *c = formatString;
+   // Very simple printf style format printer
+   int argNo = 0;
+   char *c = formatString;
 
-while (*c)
-{
-if (*c == '%')
-{
-c++;
-if (args->count < ++argNo + 2)
-{
-warning("Not enough arguments for format string");
-return 0;
-}
+   while (*c)
+   {
+      if (*c == '%')
+      {
+         c++;
+         if (args->count < ++argNo + 2)
+         {
+            warning("Not enough arguments for format string");
+            return 0;
+         }
 
-if (*c=='s')
-{
-char stringArg[10240]= {0};
-read_string(proc, args->arg[1+argNo].val.val, stringArg, sizeof(stringArg));
-printf("%s",stringArg);
-} 
-else
-{
-printf("== arg type %c unsupported by pmx ==",*c);
-}
-c++;
-} 
-else
-{
-printf("%c",*c);
-c++;
-}
-}
+         if (*c=='s')
+         {
+            char stringArg[10240]= {0};
+            read_string(proc, args->arg[1+argNo].val.val, stringArg, sizeof(stringArg));
+            printf("%s",stringArg);
+         } 
+         else
+         {
+            printf("== arg type %c unsupported by pmx ==",*c);
+         }
+         c++;
+      } 
+      else
+      {
+         printf("%c",*c);
+         c++;
+      }
+   }
 
-return 1;
+   return 1;
 }
 
 int print_strlen(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-if (args->count >= 1) // We can't check the type as it isn't a mangled C++ symbol
-print_string(name, "s", proc, args->arg[0].val.val);
+   if (args->count >= 1) // We can't check the type as it isn't a mangled C++ symbol
+      print_string(name, "s", proc, args->arg[0].val.val);
 
-return 1;
+   return 1;
 }
 
 int print_strcpy(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-if (args->count >= 2) // We can't check the type as it isn't a mangled C++ symbol
-{
-print_string(name, "dst", proc, args->arg[0].val.val);
-print_string(name, "src", proc, args->arg[1].val.val);
-}
-return 1;
+   if (args->count >= 2) // We can't check the type as it isn't a mangled C++ symbol
+   {
+      print_string(name, "dst", proc, args->arg[0].val.val);
+      print_string(name, "src", proc, args->arg[1].val.val);
+   }
+   return 1;
 }
 
 int print_sprintf(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-if (args->count >= 2) // We can't check the type as it isn't a mangled C++ symbol
-{
-print_string(name, "dst", proc, args->arg[0].val.val);
-print_string(name, "format", proc, args->arg[1].val.val);
-}
-return 1;
+   if (args->count >= 2) // We can't check the type as it isn't a mangled C++ symbol
+   {
+      print_string(name, "dst", proc, args->arg[0].val.val);
+      print_string(name, "format", proc, args->arg[1].val.val);
+   }
+   return 1;
 }
 
 int print_snprintf(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-if (args->count >= 3) // We can't check the type as it isn't a mangled C++ symbol
-{
-print_string(name, "dst", proc, args->arg[0].val.val);
-print_string(name, "format", proc, args->arg[2].val.val);
-}
-return 1;
+   if (args->count >= 3) // We can't check the type as it isn't a mangled C++ symbol
+   {
+      print_string(name, "dst", proc, args->arg[0].val.val);
+      print_string(name, "format", proc, args->arg[2].val.val);
+   }
+   return 1;
 }
 
 int print_strcmp(const mxProc * proc, const char *name, const char *comment, mxArguments *args)
 {
-if (args->count >= 2) // We can't check the type as it isn't a mangled C++ symbol
-{
-print_string(name, "s1", proc, args->arg[0].val.val);
-print_string(name, "s2", proc, args->arg[1].val.val);
-}
-return 1;
+   if (args->count >= 2) // We can't check the type as it isn't a mangled C++ symbol
+   {
+      print_string(name, "s1", proc, args->arg[0].val.val);
+      print_string(name, "s2", proc, args->arg[1].val.val);
+   }
+   return 1;
 }
 
 void setInlineMode(int mode)
 {
-inlineMode=mode;
+   inlineMode=mode;
 }
 
 int getInlineMode()
 {
-return inlineMode;
+   return inlineMode;
 }
