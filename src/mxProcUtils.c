@@ -1566,14 +1566,15 @@ void loadLibraries(mxProc * p, int elfID, const char *libraryRoot, int plddMode)
 
 
    /* Look for the depths of mysterious linker headers for r_debug */
-   for (int i = 0 ; i < elfHdr->e_phnum; i++) {
-
+   for (int i = 0 ; i < elfHdr->e_phnum; i++)
+   {
       if ((progHdrs[i].p_type != PT_DYNAMIC) || (progHdrs[i].p_offset + progHdrs[i].p_filesz > p->elfFile[elfID].mmsize))
          continue;
 
       Elf_Addr dyn;
       const Elf_Dyn *dynp;
-      for (dyn = 0; dyn < progHdrs[i].p_filesz; dyn += sizeof(Elf_Dyn)) {
+      for (dyn = 0; dyn < progHdrs[i].p_filesz; dyn += sizeof(Elf_Dyn))
+      {
          dynp = reinterpret_cast < const Elf_Dyn * >(mmFile + progHdrs[i].p_offset + dyn);
 
          if (dynp->d_tag != DT_DEBUG)
@@ -1592,9 +1593,8 @@ void loadLibraries(mxProc * p, int elfID, const char *libraryRoot, int plddMode)
          if (plddMode)
             printf("Loaded Libraries:\n");
 
-         for (mapAddr = rDebug.r_map; mapAddr;
-              mapAddr = map.l_next) {
-
+         for (mapAddr = rDebug.r_map; mapAddr; mapAddr = map.l_next)
+         {
             readMxProcVM(p, (Elf_Addr)mapAddr, &map, sizeof(map));
 
             if (map.l_name == 0)
@@ -1604,7 +1604,8 @@ void loadLibraries(mxProc * p, int elfID, const char *libraryRoot, int plddMode)
             if (! readMxProcVM(p, (Elf_Addr)map.l_name, path, 1)) // Try to read one byte just to check this is a valid address
                read_string(p, (Elf_Addr)map.l_name, path, sizeof(path));
 
-            if (path[0]) {
+            if (path[0])
+            {
                if (strcmp(path,p->elfFile[elfID].fileName)==0)
                {
                   debug("Found main binary [%s] listed in r_debug.  Skipping.", path);
@@ -1621,16 +1622,23 @@ void loadLibraries(mxProc * p, int elfID, const char *libraryRoot, int plddMode)
                else
                   strncpy(fullPath,path,sizeof(fullPath));
 
-               if (access(fullPath,R_OK) != -1) {
+               if (access(fullPath,R_OK) != -1)
+               {
                   int libElfID = openElfFile(p,  fullPath, (Elf_Addr) map.l_addr, 0, 0);
                   if (libElfID)
                      loadSymbols(p, libElfID, (Elf_Addr) map.l_addr);
                   else
                      warning("Unable to open [%s].  Symbols will be unavailable.",fullPath);
                }
-               else {
+               else
+               {
                   warning("Unable to open [%s].  Symbols will be unavailable.",fullPath);
                }
+            }
+            if( mapAddr == map.l_next)
+            {
+               warning("link_map.l_next "FMT_ADR" is pointing to itself, breaking out to avoid infinite loop.", map.l_next);
+               break;
             }
          }
 

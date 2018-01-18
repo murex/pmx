@@ -47,11 +47,7 @@ __asm__ ("movq %%rbp,%0" : "=r" (mx_instrumentation.stackbase) ); \
 mx_instrumentation.start_tag=PMX_INSTRUMENT_START_TAG; \
 mx_instrumentation.end_tag=PMX_INSTRUMENT_END_TAG;
 
-#ifdef __cplusplus
 #define PMX_INSTRUMENT_HEAD_ROW(A)          decltype(A) pmx_ ## A;
-#else
-#define PMX_INSTRUMENT_HEAD_ROW(A)          __typeof__(A) pmx_ ## A;
-#endif
 
 #define PMX_INSTRUMENT_HEAD1(A)                 PMX_INSTRUMENT_START                  PMX_INSTRUMENT_HEAD_ROW(A)
 #define PMX_INSTRUMENT_HEAD2(A,B)               PMX_INSTRUMENT_HEAD1(A)               PMX_INSTRUMENT_HEAD_ROW(B)
