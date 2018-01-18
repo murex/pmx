@@ -1,12 +1,30 @@
 bin_PROGRAMS = $(top_builddir)/bin/pmx
 
-AM_CXXFLAGS = -I$(top_builddir)/include
 
 __top_builddir__bin_pmx_SOURCES = main.c \
 pmx.c \
-mxProcUtils.c \
-mxProcUtils_linux.c \
-mxProcUtils_x86.c  
+mxProcUtils.c 
 
-__top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include -fPIC -pie -Wl,-E
-__top_builddir__bin_pmx_LDADD = -ldl
+if LINUX
+__top_builddir__bin_pmx_SOURCES += mxProcUtils_linux.c
+endif
+if SOLARIS
+__top_builddir__bin_pmx_SOURCES += mxProcUtils_SunOS.c
+endif
+
+if X86
+__top_builddir__bin_pmx_SOURCES += mxProcUtils_x86.c
+endif
+if SPARC
+__top_builddir__bin_pmx_SOURCES += mxProcUtils_sparc.c
+endif
+
+__top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include -fPIC -pie 
+
+if LINUX
+__top_builddir__bin_pmx_CFLAGS += -Wl,-E
+endif
+
+#__top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include -fPIC -pie 
+__top_builddir__bin_pmx_LDADD = -ldl 
+

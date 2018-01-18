@@ -1,11 +1,13 @@
 # PMX
 
-`pmx` is a tool to assist with analysing process or core file of ELF format.
+`pmx` is a tool and library used to analyse processes and core files on Linux and Solaris.
 
 ## Supported Architecture
 
 - [x] Linux x86_64 
 - [x] Linux i686
+- [x] Solaris x86_64 (with g++)
+- [x] Solaris i686 (with g++)
 
 ## Features
 
