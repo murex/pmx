@@ -6,6 +6,8 @@
 
 - [x] Linux x86_64 
 - [x] Linux i686
+- [x] Solaris x86_64 (with g++)
+- [x] Solaris i686 (with g++)
 
 ## Features
 

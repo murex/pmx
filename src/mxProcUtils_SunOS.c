@@ -18,18 +18,18 @@
 #include <signal.h>
 #include <dirent.h>
 #include <procfs.h>
-#include <demangle.h>
+#include <cxxabi.h>
 #include <ucontext.h>
 
 #include "mxProcUtils.h"
 
 void readFile(const mxProc * c, int elfID, Elf_Addr fileAddr, void *buffPointer, size_t size)
 {
-     if (lseek64(c->elfFile[elfID].fd,fileAddr,SEEK_SET) != fileAddr)
-     {
-          fatal_error("Failed to seek offset "FMT_ADR" in file %d.",fileAddr, elfID);
-     }
-     read(c->elfFile[elfID].fd, buffPointer, size);
+   if (lseek64(c->elfFile[elfID].fd,fileAddr,SEEK_SET) != fileAddr)
+   {
+      fatal_error("Failed to seek offset "FMT_ADR" in file %d.",fileAddr, elfID);
+   }
+   read(c->elfFile[elfID].fd, buffPointer, size);
 }
 
 void closeMxProcPID(mxProc * p)
@@ -150,12 +150,12 @@ void getLWPsFromCore(mxProc * c)
             char *endOfBin=strchr(s.pr_psargs, ' ');
             if (endOfBin)
             {
-                strncpy(c->binFile, s.pr_psargs, endOfBin - s.pr_psargs);
-                debug("Detected binary name [%s]", c->binFile);
+               strncpy(c->binFile, s.pr_psargs, endOfBin - s.pr_psargs);
+               debug("Detected binary name [%s]", c->binFile);
             }
             else
             {
-                debug("Couldn't extract binary from command line");
+               debug("Couldn't extract binary from command line");
             }
          }
 
@@ -202,8 +202,8 @@ int readMxProcVM(const mxProc * p, Elf_Addr vmAddr, void *buff, size_t size)
 
       if (fileAddr == ADDR_NULLVALUES && endAddr == ADDR_NULLVALUES)
       {
-          // Valid, but unused memory space.  Return null values.
-          return 0;
+         // Valid, but unused memory space.  Return null values.
+         return 0;
       }
       else if (fileAddr == ADDR_NULLVALUES || endAddr == ADDR_NULLVALUES)
       {
@@ -231,18 +231,23 @@ int readMxProcVM(const mxProc * p, Elf_Addr vmAddr, void *buff, size_t size)
 
 void demangleSymbolName(const char *symbolName, char *demangled, int size)
 {
-   char *tmpBuff = static_cast < char *>(malloc(size));
+   size_t tmp_size = size;
+   int status;
+   if (symbolName == getUnknownSymbol())
+   {
+      strcpy(demangled, symbolName);
+      return;
+   }
 
-   if (symbolName == getUnknownSymbol() || cplus_demangle(symbolName, tmpBuff, size))
-   {
-      // Demangle failed.  Just use the existing symbol
-      strncpy(demangled, symbolName, size);
+   debug("attempting  to demangle %s",symbolName);
+
+   abi::__cxa_demangle(symbolName, demangled, &tmp_size, &status ) ;
+
+   if (status != 0 ) {
+      debug("demangle of %s failed",symbolName);
+      strcpy(demangled, symbolName);
+      return;
    }
-   else
-   {
-      strncpy(demangled, tmpBuff, size);
-   }
-   free(tmpBuff);
 }
 
 mxProc *openPID(const char *binFileName, const char *pid, int plddMode)
@@ -275,21 +280,21 @@ mxProc *openPID(const char *binFileName, const char *pid, int plddMode)
 
    if (binFileName == NULL)
    {
-       char linkName[1024];
-       snprintf(linkName, sizeof(linkName), "/proc/%s/path/a.out", pid);
-       int iLength = readlink(linkName, fileName, sizeof(fileName)-1);
-       if (iLength <=0)
-       {
-           debug("Failed to resolve link %s",fileName);
-           strncpy(fileName,linkName, sizeof(fileName));
-       }
-       else
-       {
-           fileName[iLength]='\0';
-           debug("Resolved link %s to %s", linkName, fileName);
-       }
+      char linkName[1024];
+      snprintf(linkName, sizeof(linkName), "/proc/%s/path/a.out", pid);
+      int iLength = readlink(linkName, fileName, sizeof(fileName)-1);
+      if (iLength <=0)
+      {
+         debug("Failed to resolve link %s",fileName);
+         strncpy(fileName,linkName, sizeof(fileName));
+      }
+      else
+      {
+         fileName[iLength]='\0';
+         debug("Resolved link %s to %s", linkName, fileName);
+      }
 
-       binFileName = fileName;
+      binFileName = fileName;
    }
 
    int elfID = openElfFile(p,  binFileName, 0, 0, 1);
@@ -314,24 +319,24 @@ Elf_Addr processSignalHandler(const mxProc * p, Elf_Addr stackLimit, Elf_Addr fp
 {
 
 #if defined(__x86_64) || defined(__i386)
-    if (curr_ret_addr == SIG_RETURN)
-    {
-        if (fullStack)
-               printf("****** Signal handler\n");
+   if (curr_ret_addr == SIG_RETURN)
+   {
+      if (fullStack)
+         printf("****** Signal handler\n");
 
-       // ucontext_t is passed as the 3rd argument to the handler.  It contains the saved registers, allowing us to get the function pointer
-       Elf_Addr ucontext_addr = 0;
+      // ucontext_t is passed as the 3rd argument to the handler.  It contains the saved registers, allowing us to get the function pointer
+      Elf_Addr ucontext_addr = 0;
 #if defined (_LP64)
-       // We can't read it as an arugument as it's passed via a register and lost.  However it appars to always be near the top of the frame.
-       ucontext_addr = fp + 5 * sizeof(Elf_Addr);
+      // We can't read it as an arugument as it's passed via a register and lost.  However it appars to always be near the top of the frame.
+      ucontext_addr = fp + 5 * sizeof(Elf_Addr);
 #else
-       readMxProcVM(p, fp + 4 * sizeof(fp), &ucontext_addr, sizeof(fp));
+      readMxProcVM(p, fp + 4 * sizeof(fp), &ucontext_addr, sizeof(fp));
 #endif
-       ucontext_t ucontext;
-       debug("reading ucontext from "FMT_ADR,ucontext_addr);
-       readMxProcVM(p, ucontext_addr, &ucontext, sizeof(ucontext));
+      ucontext_t ucontext;
+      debug("reading ucontext from "FMT_ADR,ucontext_addr);
+      readMxProcVM(p, ucontext_addr, &ucontext, sizeof(ucontext));
 
-       return ucontext.uc_mcontext.gregs[REG_IP];
+      return ucontext.uc_mcontext.gregs[REG_IP];
    }
 #endif
 
@@ -339,3 +344,4 @@ Elf_Addr processSignalHandler(const mxProc * p, Elf_Addr stackLimit, Elf_Addr fp
    return curr_ret_addr;
 
 }
+
