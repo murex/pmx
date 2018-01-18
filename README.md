@@ -8,6 +8,8 @@
 - [x] Linux i686
 - [x] Solaris x86_64 (with g++)
 - [x] Solaris i686 (with g++)
+- [ ] Solaris x86_64 (with Oracle Studio)
+- [x] Solaris i686 (with Oracle Studio)
 
 ## Features
 

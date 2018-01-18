@@ -18,7 +18,11 @@
 #include <signal.h>
 #include <dirent.h>
 #include <procfs.h>
+#ifdef __GNUC__
 #include <cxxabi.h>
+#else
+#include <demangle.h>
+#endif
 #include <ucontext.h>
 
 #include "mxProcUtils.h"
@@ -241,7 +245,15 @@ void demangleSymbolName(const char *symbolName, char *demangled, int size)
 
    debug("attempting  to demangle %s",symbolName);
 
+#ifdef __GNUC__
    abi::__cxa_demangle(symbolName, demangled, &tmp_size, &status ) ;
+#else
+   char *tmpBuff = static_cast <char *>(malloc(size));
+   status = cplus_demangle(symbolName, tmpBuff, size);
+   if(status == 0)
+      strncpy(demangled, tmpBuff, size);
+   free(tmpBuff);
+#endif
 
    if (status != 0 ) {
       debug("demangle of %s failed",symbolName);
