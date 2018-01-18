@@ -25,6 +25,5 @@ if LINUX
 __top_builddir__bin_pmx_CFLAGS += -Wl,-E
 endif
 
-#__top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include -fPIC -pie 
 __top_builddir__bin_pmx_LDADD = -ldl 
 
