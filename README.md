@@ -4,10 +4,11 @@
 
 ## Supported Architecture
 
-- [x] Linux x86_64 
-- [x] Linux i686
-- [x] Solaris x86_64 (with g++)
-- [x] Solaris i686 (with g++)
+| OS (Compiler)           | x86_64                   |  i686               |
+| ----------------------- |:------------------------:|:-------------------:|
+| Linux (gcc/g++)         | :white_check_mark:       | :white_check_mark:  |
+| Solaris (gcc/g++)       | :white_check_mark:       | :white_check_mark:  |
+| Solaris (Oracle Studio) | :heavy_multiplication_x: | :white_check_mark:  |
 
 ## Features
 
@@ -46,12 +47,13 @@ files for detail.
 ## Working with Optimized Code
 
 `pmx` relies on the arguments to be passed onto stack. When code is compiled with 
-optimization, the compiler may optimize out arguments for efficiency. `pmx` provides a macro
-to instrument the function and save a copy of the arguments on the stack for easy argument 
+optimization, the compiler may optimize out arguments for efficiency. `pmx` provides two macros
+to instrument the function/method and save a copy of the arguments on the stack for easy argument 
 extraction.
 
-To instrument a function, call the `PMX_INSTRUMENT()` macro with all the argument 
-at the very first line of the function.
+To instrument a C or static C++ function, call the `PMX_INSTRUMENT()` macro with all the argument 
+at the very first line of the function. Similarly, use `PMX_INSTRUMENT_METHOD()` macro to instrument
+C++ non-static methods.
 
 ```cpp
 #include "pmxsupport.h"
@@ -96,6 +98,8 @@ volatile struct {  // must be volatile so it isn't optimised away.
     0xFABABBA0 // Magic number end tag
   };
 ```
+
+> Note instrumentation only works with gcc/g++ at the moment.
 
 ## Compile and Test
 

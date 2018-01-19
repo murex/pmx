@@ -19,11 +19,14 @@ if SPARC
 __top_builddir__bin_pmx_SOURCES += mxProcUtils_sparc.c
 endif
 
-__top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include -fPIC -pie 
+__top_builddir__bin_pmx_CFLAGS = -I$(srcdir)/../include -fPIC 
 
 if LINUX
-__top_builddir__bin_pmx_CFLAGS += -Wl,-E
+__top_builddir__bin_pmx_CFLAGS += -pie  -Wl,-E
 endif
 
 __top_builddir__bin_pmx_LDADD = -ldl 
 
+if SOLARIS
+__top_builddir__bin_pmx_LDADD += -ldemangle
+endif
