@@ -6,8 +6,8 @@
 
 | OS (Compiler)           | x86_64                   |  i686               |
 | ----------------------- |:------------------------:|:-------------------:|
-| Linux (gcc/g++)         | :white_check_mark:       | :white_check_mark:  |
-| Solaris (gcc/g++)       | :white_check_mark:       | :white_check_mark:  |
+| Linux (gcc/g++ 4.9.2)   | :white_check_mark:       | :white_check_mark:  |
+| Solaris (gcc/g++ 4.9.2) | :white_check_mark:       | :white_check_mark:  |
 | Solaris (Oracle Studio) | :heavy_multiplication_x: | :white_check_mark:  |
 
 ## Features
