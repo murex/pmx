@@ -26,6 +26,14 @@
 #include "pmx.h"
 #include "pmxsupport.h"
 
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
 
 static const char *unknownSymbol = "??????";
 
@@ -83,7 +91,7 @@ int getSizeByType(const char *type)
    if(0 == strcmp(type, "longdouble"))
       return sizeof(long double);
 
-   warning("unknown type: %s, returning default sizeof(void*): %d", type, sizeof(void *));
+   debug("not primitive type: %s, default to sizeof(void*): %d", type, sizeof(void *));
    return sizeof(void *);
 }
 
@@ -103,14 +111,30 @@ void debug(const char *format, ...)
    va_end(ap);
 }
 
+void trace(const char *format, ...)
+{
+   va_list ap;
+
+   va_start(ap, format);
+
+   if (verbose)
+   {
+      fprintf(stdout, KBLU " [trace] ");
+      vfprintf(stdout, format, ap);
+      fprintf(stdout, "\n" KNRM);
+   }
+
+   va_end(ap);
+}
+
 void warning(const char *format, ...)
 {
    va_list ap;
 
    va_start(ap, format);
-   fprintf(stdout, "Warning: ");
+   fprintf(stdout, KYEL " Warning: ");
    vfprintf(stdout, format, ap);
-   fprintf(stdout, "\n");
+   fprintf(stdout, "\n" KNRM);
    va_end(ap);
 }
 
@@ -119,9 +143,9 @@ void fatal_error(const char *format, ...)
    va_list ap;
 
    va_start(ap, format);
-   fprintf(stderr, "Fatal Error: ");
+   fprintf(stderr, KRED " Fatal Error: ");
    vfprintf(stderr, format, ap);
-   fprintf(stderr, "\n");
+   fprintf(stderr, "\n" KNRM);
    va_end(ap);
 
    exit(EXIT_FAILURE);
@@ -951,32 +975,35 @@ int get_arg_types_from_prototype(char *name, mxArguments *args)
 void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbose, mxArguments *args)
 {
 #if !defined(__sparc)
-   static Elf_Addr lastFrame = 0x0; // Remember the last frame to make sure we don't search too far
    unsigned long l;
-
-   if (lastFrame == 0x0)
-        lastFrame = frameAddr - 200 * sizeof(Elf_Addr); // If this is the first time called, search 1600 bytes into the frame for instrumentation
-
    Elf_Addr addrStartTag=0x0;
    Elf_Addr addrEndTag=0x0;
-   for (addrEndTag = frameAddr; addrEndTag>lastFrame ; addrEndTag-=sizeof(l))
+   Elf_Addr search_bound = frameAddr - 200 * sizeof(Elf_Addr);
+
+   debug(KGRN "getInstrumentedArguments: frameAddr = "FMT_ADR KNRM, frameAddr);
+
+   for (addrEndTag = frameAddr; addrEndTag > search_bound; addrEndTag-=sizeof(l))
    {
       readMxProcVM(proc,addrEndTag,&l,sizeof(l));
+      //trace("           stack "FMT_ADR ": " FMT_ADR, addrEndTag, l);
       if (l ==  PMX_INSTRUMENT_END_TAG)
       {
-         debug("PMX Instrumentation: End tag at " FMT_ADR " value: " FMT_ADR, addrEndTag, l);
+         debug(KGRN "PMX Instrumentation: End   tag at " FMT_ADR " value: " FMT_ADR KNRM, addrEndTag, l);
          break;
       }
    }
 
-   if (l ==  PMX_INSTRUMENT_END_TAG && addrEndTag != lastFrame)
+   if (l ==  PMX_INSTRUMENT_END_TAG && addrEndTag != search_bound)
    {
-      for (addrStartTag = addrEndTag; addrStartTag>lastFrame && addrStartTag > addrEndTag-20*sizeof(Elf_Addr) ; addrStartTag-=sizeof(l))
+      for(addrStartTag = addrEndTag; \
+         addrStartTag > search_bound && addrStartTag > addrEndTag - 20 * sizeof(Elf_Addr); \
+         addrStartTag -= sizeof(l))
       {
          readMxProcVM(proc,addrStartTag,&l,sizeof(l));
+         trace("           stack "FMT_ADR ": " FMT_ADR, addrStartTag, l);
          if (l ==  PMX_INSTRUMENT_START_TAG)
          {
-            debug("PMX Instrumentation: Start tag at " FMT_ADR, addrStartTag);
+            debug(KGRN "PMX Instrumentation: Start tag at " FMT_ADR " value: " FMT_ADR KNRM, addrStartTag, l);
             break;
          }
       }
@@ -994,14 +1021,12 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 
    args->instAddr.startTagAddr = addrStartTag;
    args->instAddr.endTagAddr = addrEndTag;
-
-   lastFrame = frameAddr;
-
 #endif
 }
 
 void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int fullStack, int stackArguments)
 {
+   debug(KGRN " ============ frameAddr : " FMT_ADR " addr : "FMT_ADR" ===================" KNRM, frameAddr, addr);
    char demangled[10240] = "";
    Elf_Off symbolOffset = 0;
    char *functionName = NULL;
@@ -1078,7 +1103,9 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
    if (args->instAddr.startTagAddr)
    {
-      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(unsigned long);
+      Elf_Addr addrArg = args->instAddr.endTagAddr - sizeof(unsigned long);
+      mxArguments *tmpArgs = (mxArguments *)calloc(1, sizeof(mxArguments));
+      memcpy(tmpArgs,args, sizeof(mxArguments));
       for (int i = 0; i < args->count; i++)
       {
          int nextSize = getSizeByType(args->arg[i].type);
@@ -1088,7 +1115,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
             addrArg += nextSize - addrArg % nextSize;
             debug("adjusting next argument address for alignment to " FMT_ADR, addrArg);
          }
-         addInstrumentedArgument(p, args, i, addrArg, nextSize);
+         addInstrumentedArgument(p, tmpArgs, i, addrArg, nextSize);
          addrArg +=nextSize;
       }
 
@@ -1104,44 +1131,34 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
       {
          debug("Error reading %%rbp address " FMT_ADR, addrArg);
       }
-      debug("saved %%rbp read is: "FMT_ADR, addr_rbp);
+      debug(KGRN "saved %%rbp read is: "FMT_ADR KNRM, addr_rbp);
 
-      // check the first frame stack pointer matches the instrument saved stack pointer
-      static bool firstFrame = true;
-      if(firstFrame)
+      // check the frame stack pointer matches the instrument saved stack pointer
+      if(addr_rbp == frameAddr)
       {
-         bool match = false;
-         int i = 0;
-         // the first thread should match, but we traverse LWPs to make sure it's not missed.
-         for( ; i < p->nLWPs; i++)
+         debug(KMAG "Saved %%rbp matches current frame pointer " FMT_ADR"." KNRM, frameAddr);
+         addrArg += sizeof(unsigned long);
+         if (addrArg == args->instAddr.endTagAddr)
          {
-            if(addr_rbp == p->LWPs[i].fp)
+            debug(KMAG "Instrumentation end tag match found." KNRM);
+            for (int i=0; i<args->count && i<tmpArgs->instCount; i++)
             {
-               match = true;
-               debug("found thread %d matching the %%rbp.", i);
-               break;
+               debug("copying instrumented arg %d to overall arg %d for type %s", i, i, args->arg[i].type);
+               args->arg[i].size = tmpArgs->instArg[i].size;
+               args->arg[i].val = tmpArgs->instArg[i].val;
             }
-         }  
-         if(!match)
-            warning("Instrumented frame pointer "FMT_ADR" doesn't match first frame pointer "FMT_ADR". Use these arguments with caution as they may be incorrect.", addr_rbp, p->LWPs[i].fp);
-         firstFrame = false;
+         }
+         else
+         {
+            debug("Instrumentation end tag not found, abort reading: addrArg = " FMT_ADR " endTagAddr = " FMT_ADR, addrArg, args->instAddr.endTagAddr);
+         }
       }
-
-      addrArg += sizeof(unsigned long);
-
-      if (addrArg != args->instAddr.endTagAddr)
+      else
       {
-         warning("Instrumented function arguments doesn't match the function prototype. Use these arguments with caution as they may be incorrect.");
-         debug("Alignment error while reading instrumented data: addrArg = " FMT_ADR " endTagAddr = " FMT_ADR, addrArg, args->instAddr.endTagAddr);
+         debug(KMAG "Saved %%rbp "FMT_ADR" doesn't match current frame pointer "FMT_ADR", abort reading." KNRM, addr_rbp, frameAddr);
       }
 
-      for (int i=0; i<args->count && i<args->instCount; i++)
-      {
-         debug("copying instrumented arg %d to overall arg %d for type %s", i, i, args->arg[i].type);
-         args->arg[i].size = args->instArg[i].size;
-         args->arg[i].val = args->instArg[i].val;
-      }
-
+      free(tmpArgs);
    }
    else if (foundArguments)
    {
