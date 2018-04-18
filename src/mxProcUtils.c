@@ -1103,7 +1103,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
    if (args->instAddr.startTagAddr)
    {
-      Elf_Addr addrArg = args->instAddr.endTagAddr - sizeof(unsigned long);
+      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(unsigned long);
       mxArguments *tmpArgs = (mxArguments *)calloc(1, sizeof(mxArguments));
       memcpy(tmpArgs,args, sizeof(mxArguments));
       for (int i = 0; i < args->count; i++)
