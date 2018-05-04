@@ -975,7 +975,7 @@ int get_arg_types_from_prototype(char *name, mxArguments *args)
 void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbose, mxArguments *args)
 {
 #if !defined(__sparc)
-   unsigned long l;
+   unsigned long l; // the pmx instrumentation tag are stored in 32 bits even on x64 compilation
    Elf_Addr addrStartTag = 0x0;
    Elf_Addr addrEndTag = 0x0;
    Elf_Addr storedFrameAddr = 0x0;
