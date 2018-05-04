@@ -1,5 +1,7 @@
 bin_PROGRAMS = $(top_builddir)/bin/pmx
 
+include_HEADERS = ../include/pmx.h ../include/pmxsupport.h ../include/mxProcUtils.h
+
 
 __top_builddir__bin_pmx_SOURCES = main.c \
 pmx.c \
