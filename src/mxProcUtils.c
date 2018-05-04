@@ -976,13 +976,14 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 {
 #if !defined(__sparc)
    unsigned long l;
-   Elf_Addr addrStartTag=0x0;
-   Elf_Addr addrEndTag=0x0;
+   Elf_Addr addrStartTag = 0x0;
+   Elf_Addr addrEndTag = 0x0;
+   Elf_Addr storedFrameAddr = 0x0;
    Elf_Addr search_bound = frameAddr - 200 * sizeof(Elf_Addr);
 
-   debug(KGRN "getInstrumentedArguments: frameAddr = "FMT_ADR KNRM, frameAddr);
+   debug(KGRN "getInstrumentedArguments: frameAddr = " FMT_ADR KNRM, frameAddr);
 
-   for (addrEndTag = frameAddr; addrEndTag > search_bound; addrEndTag-=sizeof(l))
+   for(addrEndTag = frameAddr; addrEndTag > search_bound; addrEndTag-=sizeof(l))
    {
       readMxProcVM(proc,addrEndTag,&l,sizeof(l));
       //trace("           stack "FMT_ADR ": " FMT_ADR, addrEndTag, l);
@@ -993,21 +994,28 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
       }
    }
 
-   if (l ==  PMX_INSTRUMENT_END_TAG && addrEndTag != search_bound)
+   if(l ==  PMX_INSTRUMENT_END_TAG && addrEndTag != search_bound)
    {
       for(addrStartTag = addrEndTag; \
          addrStartTag > search_bound && addrStartTag > addrEndTag - 20 * sizeof(Elf_Addr); \
          addrStartTag -= sizeof(l))
       {
          readMxProcVM(proc,addrStartTag,&l,sizeof(l));
-         trace("           stack "FMT_ADR ": " FMT_ADR, addrStartTag, l);
-         if (l ==  PMX_INSTRUMENT_START_TAG)
+         trace("           stack " FMT_ADR ": " FMT_ADR, addrStartTag, l);
+
+         if(addrStartTag == (addrEndTag - sizeof(Elf_Addr)))
+         {
+            storedFrameAddr = l;
+            debug(KCYN "   ----- storedFrameAddr " FMT_ADR KNRM, storedFrameAddr);
+         }
+
+         if(l ==  PMX_INSTRUMENT_START_TAG)
          {
             debug(KGRN "PMX Instrumentation: Start tag at " FMT_ADR " value: " FMT_ADR KNRM, addrStartTag, l);
             break;
          }
       }
-      if (l != PMX_INSTRUMENT_START_TAG)
+      if(l != PMX_INSTRUMENT_START_TAG)
       {
          debug("PMX Instrumentation: Failed to find start tag");
          addrEndTag = addrStartTag = 0;
@@ -1019,6 +1027,13 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
       addrEndTag = addrStartTag = 0;
    }
 
+   if(frameAddr != storedFrameAddr) 
+   {
+       debug(KGRN "stored frame pointer " FMT_ADR " doesn't match current frame pointer " FMT_ADR ", abort reading." KNRM, storedFrameAddr, frameAddr);
+       addrEndTag = addrStartTag = 0;
+   }
+   else
+      debug(KGRN "PMX Instrumentation: block validated." KNRM);
    args->instAddr.startTagAddr = addrStartTag;
    args->instAddr.endTagAddr = addrEndTag;
 #endif
@@ -1026,7 +1041,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 
 void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int fullStack, int stackArguments)
 {
-   debug(KGRN " ============ frameAddr : " FMT_ADR " addr : "FMT_ADR" ===================" KNRM, frameAddr, addr);
+   debug(KGRN " ============ frameAddr : " FMT_ADR " addr : " FMT_ADR " ===================" KNRM, frameAddr, addr);
    char demangled[10240] = "";
    Elf_Off symbolOffset = 0;
    char *functionName = NULL;
@@ -1103,7 +1118,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
    if (args->instAddr.startTagAddr)
    {
-      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(unsigned long);
+      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(Elf_Addr);
       mxArguments *tmpArgs = (mxArguments *)calloc(1, sizeof(mxArguments));
       memcpy(tmpArgs,args, sizeof(mxArguments));
       for (int i = 0; i < args->count; i++)
@@ -1119,24 +1134,24 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          addrArg +=nextSize;
       }
 
-      if( addrArg % sizeof(unsigned long) != 0)
+      if( addrArg % sizeof(Elf_Addr) != 0)
       {
-         addrArg += sizeof(unsigned long) - addrArg % sizeof(unsigned long);
+         addrArg += sizeof(Elf_Addr) - addrArg % sizeof(Elf_Addr);
          debug("   adjusting address alignment to read instrumentation end tag at " FMT_ADR, addrArg);
       }
 
       // read the instrumented %rbp
-      unsigned long addr_rbp = 0;
+      Elf_Addr addr_rbp = 0;
       if (readMxProcVM(p, addrArg, &addr_rbp, sizeof(addr_rbp)))
       {
          debug("Error reading %%rbp address " FMT_ADR, addrArg);
       }
-      debug(KGRN "saved %%rbp read is: "FMT_ADR KNRM, addr_rbp);
+      debug(KGRN "saved %%rbp read is: " FMT_ADR KNRM, addr_rbp);
 
       // check the frame stack pointer matches the instrument saved stack pointer
       if(addr_rbp == frameAddr)
       {
-         debug(KMAG "Saved %%rbp matches current frame pointer " FMT_ADR"." KNRM, frameAddr);
+         debug(KMAG "Saved %%rbp matches current frame pointer " FMT_ADR "." KNRM, frameAddr);
          addrArg += sizeof(unsigned long);
          if (addrArg == args->instAddr.endTagAddr)
          {
@@ -1153,9 +1168,9 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
             debug("Instrumentation end tag not found, abort reading: addrArg = " FMT_ADR " endTagAddr = " FMT_ADR, addrArg, args->instAddr.endTagAddr);
          }
       }
-      else
+      else // we should not reach this else clause
       {
-         debug(KMAG "Saved %%rbp "FMT_ADR" doesn't match current frame pointer "FMT_ADR", abort reading." KNRM, addr_rbp, frameAddr);
+         debug(KMAG "Saved %%rbp " FMT_ADR " doesn't match current frame pointer " FMT_ADR ", abort reading." KNRM, addr_rbp, frameAddr);
       }
 
       free(tmpArgs);
@@ -1295,7 +1310,7 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
          {
             switch (args->arg[i].size)
             {
-               case 16: printf("%#Lx", args->arg[i].val.valLongDouble); break;
+               case 16: printf("%#Lf", args->arg[i].val.valLongDouble); break;
                case 8: printf("%#lx", args->arg[i].val.val); break;
                case 4: printf("%#x",  args->arg[i].val.val4); break;
                case 2: printf("%#hx",  args->arg[i].val.val4); break;
@@ -1654,7 +1669,7 @@ void loadLibraries(mxProc * p, int elfID, const char *libraryRoot, int plddMode)
             }
             if( mapAddr == map.l_next)
             {
-               warning("link_map.l_next "FMT_ADR" is pointing to itself, breaking out to avoid infinite loop.", map.l_next);
+               warning("link_map.l_next " FMT_ADR " is pointing to itself, breaking out to avoid infinite loop.", map.l_next);
                break;
             }
          }
