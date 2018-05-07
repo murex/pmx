@@ -1006,7 +1006,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
          if(addrStartTag == (addrEndTag - sizeof(Elf_Addr)))
          {
             storedFrameAddr = l;
-            debug(KCYN "   ----- storedFrameAddr " FMT_ADR KNRM, storedFrameAddr);
+            debug(KCYN "                 ^^ stored %rbp: " FMT_ADR KNRM, storedFrameAddr);
          }
 
          if(l ==  PMX_INSTRUMENT_START_TAG)
@@ -1029,7 +1029,7 @@ void getInstrumentedArguments(const mxProc *proc, Elf_Addr frameAddr, int verbos
 
    if(frameAddr != storedFrameAddr) 
    {
-       debug(KGRN "stored frame pointer " FMT_ADR " doesn't match current frame pointer " FMT_ADR ", abort reading." KNRM, storedFrameAddr, frameAddr);
+       debug(KGRN "stored %%rbp " FMT_ADR " doesn't match current frameAddr " FMT_ADR ", abort reading." KNRM, storedFrameAddr, frameAddr);
        addrEndTag = addrStartTag = 0;
    }
    else
@@ -1114,31 +1114,10 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
    debug("Found %d int args, %d float args, %d instrumented args and %d prototype args for [%s] which is at " FMT_ADR " with a frame at " FMT_ADR,
          args->intCount, args->floatCount, args->instCount, args->count, demangled,addr-symbolOffset,frameAddr);
 
-
    // Now update args->arg based on the prototype if available, copying values from intArg and floatArg
    if (args->instAddr.startTagAddr)
    {
-      Elf_Addr addrArg = args->instAddr.startTagAddr + sizeof(Elf_Addr);
-      mxArguments *tmpArgs = (mxArguments *)calloc(1, sizeof(mxArguments));
-      memcpy(tmpArgs,args, sizeof(mxArguments));
-      for (int i = 0; i < args->count; i++)
-      {
-         int nextSize = getSizeByType(args->arg[i].type);
-         debug("   arg %d: type: %s, size: %d, addr: " FMT_ADR, i, args->arg[i].type, nextSize, addrArg);
-         if( addrArg % nextSize != 0)
-         {
-            addrArg += nextSize - addrArg % nextSize;
-            debug("adjusting next argument address for alignment to " FMT_ADR, addrArg);
-         }
-         addInstrumentedArgument(p, tmpArgs, i, addrArg, nextSize);
-         addrArg +=nextSize;
-      }
-
-      if( addrArg % sizeof(Elf_Addr) != 0)
-      {
-         addrArg += sizeof(Elf_Addr) - addrArg % sizeof(Elf_Addr);
-         debug("   adjusting address alignment to read instrumentation end tag at " FMT_ADR, addrArg);
-      }
+      Elf_Addr addrArg = args->instAddr.endTagAddr - sizeof(Elf_Addr);
 
       // read the instrumented %rbp
       Elf_Addr addr_rbp = 0;
@@ -1152,28 +1131,33 @@ void printStackItem(const mxProc * p, Elf_Addr addr, Elf_Addr frameAddr, int ful
       if(addr_rbp == frameAddr)
       {
          debug(KMAG "Saved %%rbp matches current frame pointer " FMT_ADR "." KNRM, frameAddr);
-         addrArg += sizeof(unsigned long);
-         if (addrArg == args->instAddr.endTagAddr)
+
+         // now parse and read argument values
+         addrArg = args->instAddr.startTagAddr + sizeof(Elf_Addr);
+         for (int i = 0; i < args->count; i++)
          {
-            debug(KMAG "Instrumentation end tag match found." KNRM);
-            for (int i=0; i<args->count && i<tmpArgs->instCount; i++)
+            int nextSize = getSizeByType(args->arg[i].type);
+            debug("   arg %d: type: %s, size: %d, addr: " FMT_ADR, i, args->arg[i].type, nextSize, addrArg);
+            if( addrArg % nextSize != 0)
             {
-               debug("copying instrumented arg %d to overall arg %d for type %s", i, i, args->arg[i].type);
-               args->arg[i].size = tmpArgs->instArg[i].size;
-               args->arg[i].val = tmpArgs->instArg[i].val;
+               addrArg += nextSize - addrArg % nextSize;
+               debug("adjusting next argument address for alignment to " FMT_ADR, addrArg);
             }
+            addInstrumentedArgument(p, args, i, addrArg, nextSize);
+            addrArg +=nextSize;
          }
-         else
+
+         for(int i=0; i<args->count && i<args->instCount; i++)
          {
-            debug("Instrumentation end tag not found, abort reading: addrArg = " FMT_ADR " endTagAddr = " FMT_ADR, addrArg, args->instAddr.endTagAddr);
+            debug("copying instrumented arg %d to overall arg %d for type %s", i, i, args->arg[i].type);
+            args->arg[i].size = args->instArg[i].size;
+            args->arg[i].val = args->instArg[i].val;
          }
       }
       else // we should not reach this else clause
       {
          debug(KMAG "Saved %%rbp " FMT_ADR " doesn't match current frame pointer " FMT_ADR ", abort reading." KNRM, addr_rbp, frameAddr);
       }
-
-      free(tmpArgs);
    }
    else if (foundArguments)
    {
