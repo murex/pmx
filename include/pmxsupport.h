@@ -32,11 +32,11 @@
 // We add the magic tags at the end, as gcc 4.9 creates a duplicate structure in memory if we initialise with them in place
 #define PMX_INSTRUMENT_START                    \
     volatile struct {                           \
-        unsigned long start_tag;
+        volatile unsigned long start_tag;
 
 #define PMX_INSTRUMENT_HEAD_END                 \
-    unsigned long stackbase;                     \
-    unsigned long end_tag;                       \
+    volatile unsigned long stackbase;                     \
+    volatile unsigned long end_tag;                       \
     } PMX_INSTRUMENTATION_ATTR mx_instrumentation = { \
           0x0,
 
