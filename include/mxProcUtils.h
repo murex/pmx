@@ -44,6 +44,8 @@ typedef struct stat64 mxstat;
 typedef struct stat mxstat;
 #endif
 
+#define LINE_BUFFER_SIZE 1024
+
 typedef enum
 {
    mxProcTypeNone = 0,
@@ -168,8 +170,8 @@ typedef struct
    int nLWPs;
    mxLWPs_t LWPs;
 
-   char filePrefix[1024];      // If we want to dump some output to files, we can use this for the prefix
-   char binFile[1024];         // Detected binary name
+   char filePrefix[LINE_BUFFER_SIZE];      // If we want to dump some output to files, we can use this for the prefix
+   char binFile[LINE_BUFFER_SIZE];         // Detected binary name
 }
 mxProc;
 
@@ -225,6 +227,9 @@ int readMxProcVM(const mxProc *p, Elf_Addr vmAddr, void *buff, size_t size);
 void demangleSymbolName(const char *symbolName, char *demangled, int size);
 Elf_Addr processSignalHandler(const mxProc * p, Elf_Addr stackLimit, Elf_Addr fp, Elf_Addr curr_ret_addr, int fullStack);
 
+void inline_replace(char *orig, char *pattern, char *replace);
+void add_remap_entry(char *optarg, char *delim);
+void check_path_replacement(char *path);
 
 // A special memory location reading from core files which indicates that it is a valid, but unused address
 // In this case, all reads should return NULL values. This will never conflict with a genuine location

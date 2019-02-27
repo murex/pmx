@@ -21,8 +21,6 @@
 #include "mxProcUtils.h"
 #include "pmx.h"
 
-extern TypePrinterEntry *type_printer_for_type;
-
 int main(int argc, char *argv[])
 {
    //These are the different modes we can run in
@@ -36,14 +34,14 @@ int main(int argc, char *argv[])
 
    int opt;
    char * addressSymbol = NULL;
-   char dataType[1024] = "RAW1K";
+   char dataType[LINE_BUFFER_SIZE] = "RAW1K";
    int errflg = 0;
    int lwp = 1;
    long stackArguments = 8;
-   char libraryRoot[1024] = "/";
-   char libraryExtension[1024] = "./libpmxext.so";
+   char libraryRoot[LINE_BUFFER_SIZE] = "/";
+   char libraryExtension[LINE_BUFFER_SIZE] = "./libpmxext.so";
    void *libextHandle = NULL;
-   char filePrefix[1024] = "";
+   char filePrefix[LINE_BUFFER_SIZE] = "";
    char *command;
    int corruptStack=200;
    int force=0;
@@ -90,6 +88,7 @@ int main(int argc, char *argv[])
    char sz_verbose[]="verbose";
    char sz_address[]="address";
    char sz_force[]="force";
+   char sz_remap[]="remap";
 
    static struct option long_options[] = {
       {sz_args,         required_argument, 0, 'a' },
@@ -106,6 +105,7 @@ int main(int argc, char *argv[])
       {sz_sysroot,      required_argument, 0, 'l' },
       {sz_libext,       required_argument, 0, 'L' },
       {sz_pargs,        no_argument,       0, 'm' },
+      {sz_remap,        required_argument, 0, 'M' },
       {sz_output_prefix,required_argument, 0, 'p' },
       {sz_raw_stack,    required_argument, 0, 'r' },
       {sz_pstack,       no_argument,       0, 's' },
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
    /* options */
    int opt_index=0;
-   while ((opt = getopt_long(argc, argv, "a:bcd:efhij:l:L:mp:r:stvx:", long_options, &opt_index)) != -1)
+   while ((opt = getopt_long(argc, argv, "a:bcd:efhij:l:L:mM:p:r:stvx:", long_options, &opt_index)) != -1)
    {
       switch (opt)
       {
@@ -164,6 +164,9 @@ int main(int argc, char *argv[])
             break;
          case 'm':
             pargs = 1;
+            break;
+         case 'M': // remap expects two arguments, the source and destination
+            add_remap_entry(optarg, (char *)" ");
             break;
          case 'p':
             strncpy(filePrefix,optarg,sizeof(filePrefix));
@@ -229,6 +232,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "                           Use -t to list supported types.  Default is RAW1K.\n");
       fprintf(stderr, "  --all-threads, -f        Process all threads, rather than just the first.\n");
       fprintf(stderr, "  --sysroot=path, -l path  Use path as system root for loading libraries with\n");
+      fprintf(stderr, "  --remap=\"src dest\", -M \"src dest\" Remap library path from src to dest on local machine\n");
       fprintf(stderr, "  --libext=path, -L path   Path to customized type checker, default is libpmxext.so.\n");
       fprintf(stderr, "                           absolute references. Like 'set sysroot' in gdb.\n");
       fprintf(stderr, "  --output-prefix=path, -p path\n");
@@ -287,7 +291,7 @@ int main(int argc, char *argv[])
 
    // Open a process or a core file
    mxProc *p;
-   char processBase[1024];
+   char processBase[LINE_BUFFER_SIZE];
 
    // Strip off LWPID (only if it's numeric)
    strncpy(processBase, process, sizeof(processBase));
@@ -441,6 +445,6 @@ int main(int argc, char *argv[])
    if(libextHandle)
       dlclose(libextHandle);
 
-   return (EXIT_SUCCESS);
+   return EXIT_SUCCESS;
 }
 

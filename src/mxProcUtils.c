@@ -44,10 +44,63 @@ void initMxProc(mxProc * p)
 }
 
 static int verbose=0;
+static int remap_count=0;
+static char remap_dirs[10][2][LINE_BUFFER_SIZE] = { 0 };
 
 void setVerbose(int v)
 {
    verbose=1;
+}
+
+void inline_replace(char *orig, char *pattern, char *replace)
+{
+   if(NULL == orig || NULL == pattern || NULL == replace)
+      return;
+
+   char *p = strstr(orig, pattern);
+   if(NULL == p )
+      return;
+
+   if(pattern[strlen(pattern)-1] == '/')
+      pattern[strlen(pattern)-1] ='\0'; 
+   if(replace[strlen(replace)-1] == '/')
+      replace[strlen(replace)-1] ='\0'; 
+
+   //debug(" input: orig = '%s' pattern = '%s' index = %0X replace = '%s'\n", orig, pattern, p, replace);
+   char tmp[1024] = { 0 };
+   strncpy(tmp, orig, p - orig);
+
+   strncpy(tmp+(p-orig), replace, strlen(replace));
+   strncpy(tmp+(p-orig)+strlen(replace), p + strlen(pattern), strlen(orig) - (p - orig) - strlen(pattern));
+
+   debug("original path: '%s'", orig);
+   strcpy(orig, tmp);
+   debug(" remapping to: '%s'", orig);
+}
+
+void add_remap_entry(char *optarg, char *delim)
+{
+   if(NULL == optarg || NULL == delim)
+   {
+      warning("%s: NULL pointer passed in, entry ignored", __FUNCTION__);
+      return;
+   }
+   char *pos = strstr(optarg, delim);
+   if( NULL == pos)
+   {
+      warning("usage hint: -M | --remap \"source_dir dest_dir\"");
+      return;
+   }
+   strncpy(remap_dirs[remap_count][0],optarg,pos-optarg);
+   strncpy(remap_dirs[remap_count][1],pos+1,strlen(optarg)-(pos+1-optarg));
+   debug("added remap from '%s' to '%s'", remap_dirs[remap_count][0], remap_dirs[remap_count][1]);
+   remap_count++;
+}
+
+void check_path_replacement(char *path)
+{	    
+   for(int i = 0; i < remap_count; i++)
+      inline_replace(path, remap_dirs[i][0], remap_dirs[i][1]);
 }
 
 int getSizeByType(const char *type)
@@ -1637,6 +1690,8 @@ void loadLibraries(mxProc * p, int elfID, const char *libraryRoot, int plddMode)
                   sprintf(fullPath,"%s%s",libraryRoot,path+1);
                else
                   strncpy(fullPath,path,sizeof(fullPath));
+
+               check_path_replacement(fullPath);
 
                if (access(fullPath,R_OK) != -1)
                {
