@@ -124,7 +124,7 @@ To test:
 cd bin
 ./testpmx "hello pmx test"
 # create a symbolic link to the shared library
-../test/lib/.libs/libpmxext-0.1.so.0.0.1 libpmxext.so
+ln -sf ../test/lib/.libs/libpmxext-0.1.so.0.0.1 libpmxext.so
 ./pmx -s core.xxx
 ```
 
