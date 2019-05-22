@@ -115,7 +115,7 @@ mkdir build
 make
 ```
 
-This will build `pmx` binary, a test program `testpmx` which could generate a core file, 
+This will build `pmx` binary, a test binary `testpmx` which could generate a core file, 
 and a shared library plugin customized type printer defined in `test/lib` diretory.
 
 To test:
@@ -137,8 +137,8 @@ available at http://www.eclipse.org/legal/epl-v10.html.
 ## Contributing 
 
 The master branch of this repository contains the latest stable changes. Pull requests 
-should be submitted against the latest head of master. See [here](CONTRIBUTING.md) for 
-contributing agreement.
+should be submitted against the latest head of master. See [here](https://github.com/murex/contribution) for 
+contribution agreement and guidelines.
 
 ## Contact
 
